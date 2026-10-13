@@ -879,10 +879,12 @@ body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background-color:var
 body.phone-mode{
   padding: 0;
   margin: 0;
-  height: 100vh;
-  height: 100dvh;
+  height: auto;
+  min-height: calc(100dvh + 140px);   /* ★ extra room below → user can scroll → Safari hides its bars */
   width: 100vw;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 body.phone-mode #game-board{
@@ -893,6 +895,8 @@ body.phone-mode #game-board{
   box-sizing: border-box;
   max-width: none;
   overflow: hidden;
+  height: 100dvh;                     /* fills current viewport; JS adjusts to innerHeight/scale */
+  flex-shrink: 0;
 }
 
 /* Empty wrappers after JS shuffle */
@@ -918,13 +922,13 @@ body.phone-mode .pm-col{
   min-width: 0;
 }
 body.phone-mode .pm-left {
-  flex: 0 0 100px; width: 100px; overflow: hidden;
+  flex: 0 0 76px; width: 76px; overflow: hidden;
 }
 body.phone-mode .pm-mid {
   flex: 1 1 auto; min-width: 0; overflow: hidden; position: relative;
 }
 body.phone-mode .pm-right {
-  flex: 0 0 148px; width: 148px; overflow: hidden;
+  flex: 0 0 108px; width: 108px; overflow: hidden;
 }
 
 /* ───── LEFT COLUMN ───── */
@@ -1108,19 +1112,24 @@ body.phone-mode .map-region-label{ font-size: 20px; }
 
 /* ───── BOTTOM ROW: title + settings ───── */
 body.phone-mode .top-row{
-  flex: 0 0 auto;
+  flex: 0 0 26px;                 /* ★ fixed 26px height */
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
   justify-content: space-between !important;
   gap: 4px !important;
-  padding: 3px 4px !important;
+  padding: 0 4px !important;
   margin: 0 !important;
-  min-height: auto !important;
+  min-height: 26px !important;
   border: 2px solid var(--border-color);
   border-radius: 5px;
   background: rgba(0,0,0,.3);
   overflow: hidden;
+}
+body.phone-mode .game-title{ font-size: 12px !important; letter-spacing: 1px !important; }
+body.phone-mode .top-settings-buttons .reset-btn,
+body.phone-mode .top-settings-buttons .roll-btn{
+  width: 26px; height: 22px; font-size: 6px; border-width: 1px; border-radius: 3px; padding: 0;
 }
 body.phone-mode .game-title{
   font-size: 14px !important;
@@ -1150,12 +1159,16 @@ body.phone-mode .top-settings-buttons .roll-btn.util-btn{ font-size: 7px; }
 body.phone-mode .external-pool,
 body.phone-mode .eliminated-pool{
   flex: 0 0 auto;
-  padding: 2px 4px; gap: 2px; margin: 0;
-  min-height: auto; border-width: 2px; border-radius: 4px;
+  padding: 0 4px; gap: 2px; margin: 0;
+  min-height: 20px; max-height: 20px;
+  border-width: 1px; border-radius: 4px;
   overflow: hidden;
+  align-items: center;
 }
-body.phone-mode .external-pool.collapsed,
-body.phone-mode .eliminated-pool.collapsed{ padding: 1px 4px; }
+body.phone-mode .external-pool .pool-header,
+body.phone-mode .eliminated-pool .pool-header{ height: 18px; padding: 0; }
+body.phone-mode .external-pool .pool-label,
+body.phone-mode .eliminated-pool .pool-label{ font-size: 9px; }
 body.phone-mode .external-pool .pool-header,
 body.phone-mode .eliminated-pool .pool-header{ padding: 0; }
 body.phone-mode .pool-label{ font-size: 9px; }
@@ -3023,6 +3036,18 @@ function togglePhoneMode(on){
   if (typeof renderSettings === 'function') renderSettings();
 }
 
+let _pmLastInnerH = 0;
+
+function _pmViewportSize(){
+  // visualViewport gives the *visible* area (excludes Safari bars),
+  // but during the initial "bars shown" state it can be smaller.
+  // We use Math.max of the two to always pick the biggest known viewport.
+  const vv = window.visualViewport;
+  const w = Math.max(window.innerWidth,  vv ? vv.width  : 0);
+  const h = Math.max(window.innerHeight, vv ? vv.height : 0);
+  return { w, h };
+}
+
 function applyPhoneMode(){
   const gb = document.getElementById('game-board');
   if (!gb) return;
@@ -3032,12 +3057,12 @@ function applyPhoneMode(){
     document.body.classList.add('phone-mode');
     collapsePoolsForPhoneMode();
 
-    // Force the game-board to be exactly the viewport size (adjusted
-    // for the current CSS zoom from setScale).
     const s = (typeof currentScale === 'number' && currentScale > 0) ? currentScale : 0.7;
-    gb.style.width    = Math.round(window.innerWidth  / s) + 'px';
-    gb.style.height   = Math.round(window.innerHeight / s) + 'px';
+    const { w, h } = _pmViewportSize();
+    gb.style.width    = Math.round(w / s) + 'px';
+    gb.style.height   = Math.round(h / s) + 'px';
     gb.style.maxWidth = 'none';
+    _pmLastInnerH = window.innerHeight;
   } else {
     document.body.classList.remove('phone-mode');
     gb.style.width = '';
@@ -3047,11 +3072,40 @@ function applyPhoneMode(){
     restorePoolsFromPhoneMode();
   }
 
-  // After layout settles: resize the map, re-anchor round indicator
   setTimeout(() => {
     updatePhoneMapZoom();
     if (typeof updateIndicator === 'function') updateIndicator();
   }, 100);
+}
+
+/* ★ When Safari's bars auto-hide (viewport height grows by ~40–80px),
+   the game-board was sized to the smaller viewport. Snap back to the
+   top and re-fit to the taller viewport so nothing is cut off. */
+window.addEventListener('resize', () => {
+  if (!phoneMode) return;
+  const nowH = window.innerHeight;
+  if (nowH > _pmLastInnerH + 25){
+    // Bars just hid → re-fit and reset scroll
+    _pmLastInnerH = nowH;
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    applyPhoneMode();
+  } else if (nowH < _pmLastInnerH - 25){
+    // Bars came back
+    _pmLastInnerH = nowH;
+    applyPhoneMode();
+  }
+});
+
+/* Some iOS versions only fire visualViewport resize, not window resize */
+if (window.visualViewport){
+  window.visualViewport.addEventListener('resize', () => {
+    if (!phoneMode) return;
+    const nowH = window.innerHeight;
+    if (Math.abs(nowH - _pmLastInnerH) > 25){
+      _pmLastInnerH = nowH;
+      applyPhoneMode();
+    }
+  });
 }
 
 /* Wrap elements into pm-main / pm-left / pm-mid / pm-right */
@@ -3133,27 +3187,28 @@ function updatePhoneMapZoom(){
   if (!phoneMode){ mapBox.style.zoom = ''; return; }
 
   const s = (typeof currentScale === 'number' && currentScale > 0) ? currentScale : 0.7;
-  const vpW = window.innerWidth  / s;
-  const vpH = window.innerHeight / s;
+  const { w, h } = _pmViewportSize();
+  const vpW = w / s;
+  const vpH = h / s;
 
-  // Column reservations in game-board CSS px
-  const leftCol  = 100;
-  const rightCol = 148;
+  // ★ Slimmer columns → more room for the map
+  const leftCol  = 76;         // was 100
+  const rightCol = 108;        // was 148
   const gaps     = 3 * 4;      // 4 gaps of 3px
   const padding  = 3 * 2;
 
-  // Bottom row reservations (title+settings + collapsed pools)
-  const bottomRow = 40;        // title row
-  const poolsRow  = 14;        // collapsed pool headers
+  // ★ Slimmer bottom rows → more vertical room for the map
+  const bottomRow = 28;        // title + settings row (was 40)
+  const poolsRow  = 10;        // collapsed pool headers (was 14)
   const bottomGap = 3 * 3;
 
   const availW = Math.max(80, vpW - leftCol - rightCol - gaps - padding);
   const availH = Math.max(60, vpH - bottomRow - poolsRow - bottomGap - padding);
 
+  // ★ No upper cap — the map can zoom UP to fill the column
   const zoom = Math.max(0.08, Math.min(availW / 1450, availH / 950));
 
   mapBox.style.zoom = zoom;
-  // Force the layout box so pm-mid doesn't over-reserve
   mapBox.style.width  = (1450 * zoom) + 'px';
   mapBox.style.height = (950  * zoom) + 'px';
 }
