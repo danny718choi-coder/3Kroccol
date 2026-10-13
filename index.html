@@ -3746,7 +3746,7 @@ function glowZhengZhaoTargets(faction){
     const st = troopState[id];
     if(!st) return;
     const loc = st.location;
-    if(loc === 'available' || loc === 'external'){
+    if(loc === 'available'){                                       /* ★ external excluded */
       wrapper.classList.add('kangcao-target');
     } else if(loc && loc.startsWith('region-') && st.hp < st.maxHp){
       wrapper.classList.add('kangcao-target');
@@ -3785,42 +3785,86 @@ function highlightKangCaoTargets(d1, d2){
     }
   });
 
-  // ── Step 2: decide mode by strict priority ──
-  //   1. 拉攏 (聯曹/中立 rolled)       → highest priority
-  //   2. 徵召 (反曹 rolled, none above) → fallback
-  //   3. 任意 (nothing rolled)          → last resort
-  let mode;
-  if (movableRolled.length > 0)      mode = 'laliang';
-  else if (fancaoRolled.length > 0)  mode = 'zhengzhao';
-  else                               mode = 'arbitrary';
+  /* ── Helpers: check feasibility before choosing mode ── */
 
-  // ── Step 3: apply ──
-  if (mode === 'laliang'){
-    movableRolled.forEach(({ piece }) => piece.classList.add('kangcao-target'));
+  /* Can this 立場棋 (in 聯曹 / 中立) legally step one column down? */
+  const canMoveDown = (piece) => {
+    const srcContent = piece.parentElement && piece.parentElement.closest('.diplo-content');
+    if(!srcContent) return false;
+    const srcId = srcContent.id;
+    const destId = (srcId === 'content-liancao') ? 'content-zhongli'
+                 : (srcId === 'content-zhongli')  ? 'content-fancao'
+                 : null;
+    if(!destId) return false;
+    const destArea = document.getElementById(destId) &&
+                     document.getElementById(destId).querySelector('.piece-area');
+    return !!destArea && destArea.children.length < 4;
+  };
+
+  /* Does this faction have at least one 徵召-eligible troop? */
+  const hasZZTarget = (faction) => {
+    if(!faction) return false;
+    if(fallenFactions.has(faction)) return false;
+    for(const id in troopConfig){
+      if(troopConfig[id].faction !== faction) continue;
+      const st = troopState[id];
+      if(!st) continue;
+      const loc = st.location;
+      if(loc === 'available') return true;                         /* ★ external excluded */
+      if(loc && loc.startsWith('region-') && st.hp < st.maxHp) return true;
+    }
+    return false;
+  };
+
+  /* ── Step 2: dice-matched 拉攏 / 徵召 ── */
+  let glowed = false;
+
+  /* 1. 拉攏: dice-matched 聯曹 / 中立 piece whose destination has room */
+  const movableUsable = movableRolled.filter(({piece}) => canMoveDown(piece));
+  if(movableUsable.length > 0){
+    movableUsable.forEach(({piece}) => piece.classList.add('kangcao-target'));
+    glowed = true;
   }
-  else if (mode === 'zhengzhao'){
-    // Dedup factions (in case both rolled dice match 2 different 反曹 pieces)
+
+  /* 2. 徵召: dice-matched 反曹 faction that has a 徵召 target */
+  if(!glowed){
     const seen = new Set();
-    fancaoRolled.forEach(({ faction }) => {
-      if (seen.has(faction)) return;
+    let anyZZ = false;
+    fancaoRolled.forEach(({faction}) => {
+      if(seen.has(faction)) return;
       seen.add(faction);
-      glowZhengZhaoTargets(faction);
+      if(hasZZTarget(faction)){ glowZhengZhaoTargets(faction); anyZZ = true; }
     });
+    if(anyZZ) glowed = true;
   }
-  else {
-    // Arbitrary: any 立場棋 in 聯曹/中立 → glow for 拉攏
-    //            any faction in 反曹           → glow its troops for 徵召
-    document.querySelectorAll('.chess-piece').forEach(piece => {
-      const srcContent = piece.parentElement && piece.parentElement.closest('.diplo-content');
-      if(!srcContent) return;
-      if(srcContent.id === 'eliminated-content') return;
-      const faction = getFactionFromPiece(piece);
-      if(!faction) return;
-      if(fallenFactions.has(faction)) return;
-      if(srcContent.id === 'content-fancao'){
-        glowZhengZhaoTargets(faction);
-      } else {
+
+  /* ── Fallback (任意拉攏 or 徵召): glow every legal action ── */
+  if(!glowed){
+    // 任意徵召: any non-caocao faction with at least one 徵召-eligible troop
+    const seenFacs = new Set();
+    ['#content-liancao', '#content-zhongli', '#content-fancao'].forEach(sel => {
+      document.querySelectorAll(sel + ' .chess-piece').forEach(piece => {
+        const fac = getFactionFromPiece(piece);
+        if(!fac) return;
+        if(fac === 'caocao') return;
+        if(fallenFactions.has(fac)) return;
+        if(seenFacs.has(fac)) return;
+        seenFacs.add(fac);
+        if(hasZZTarget(fac)){
+          glowZhengZhaoTargets(fac);
+          glowed = true;
+        }
+      });
+    });
+
+    // 任意拉攏: every movable 聯曹 / 中立 piece
+    document.querySelectorAll('#content-liancao .chess-piece, #content-zhongli .chess-piece').forEach(piece => {
+      const fac = getFactionFromPiece(piece);
+      if(!fac) return;
+      if(fallenFactions.has(fac)) return;
+      if(canMoveDown(piece)){
         piece.classList.add('kangcao-target');
+        glowed = true;
       }
     });
   }
@@ -4759,9 +4803,18 @@ function changeTroopHp(id,amount,e){
   pushUndoSnapshot(amount>0?'徵召 +1兵力':'戰損 -1兵力');
   st.hp=newHp;
   updateTroopRotation(id);
-  if(newHp===0){moveTroopToRecovery(id);}
-  else if(amount>0){scheduleAutoAdvance();}
-  checkBattleResolution();     // ★
+  if(newHp === 0){
+    moveTroopToRecovery(id);
+  } else if(amount > 0){
+    /* ★ 抗曹 徵召 (heal a wounded troop) → end the check, no round advance.
+          Normal 行動 heal → auto-advance. */
+    if(kangCaoSelectionActive){
+      endKangCaoCheck();
+    } else {
+      scheduleAutoAdvance();
+    }
+  }
+  checkBattleResolution();
   scheduleAutoSave();
 }
 
@@ -5105,11 +5158,15 @@ function dropTroopOnProvince(wrapper,targetProvince,animate){
   // Re-check: if this move pulled an invader out of the battle province,
   // or finished the fight, clear pendingBattle and hide the button.
   checkBattleResolution();
-  // ★ NEW: recalcVP now runs after pendingBattle is (possibly) registered.
-  //   If a battle is active, recalcVP() will self-freeze.
   recalcVP();
 
-  scheduleAutoAdvance();
+  /* ★ 抗曹 徵召 commit → end the check, do NOT advance the round.
+        Otherwise this is a normal 行動 徵召 → auto-advance. */
+  if(kangCaoSelectionActive){
+    endKangCaoCheck();
+  } else {
+    scheduleAutoAdvance();
+  }
   scheduleAutoSave();
 }
 
@@ -5221,6 +5278,10 @@ function showRetreatButton(){
   pendingBattle.invaderIds.forEach(id => {
     const w = document.getElementById('tw-' + id);
     if (!w || w.parentElement !== targetEl) return;
+    if (w.style.display === 'none') return;           /* ★ dead / hidden */
+    const st = troopState[id];
+    if (!st || st.hp <= 0) return;                    /* ★ no HP */
+    if (st.location !== targetEl.id) return;          /* ★ no longer here */
     const x = parseFloat(w.style.getPropertyValue('--offset-x')) || 0;
     if (x > maxX){ maxX = x; rightmost = w; }
   });
@@ -5328,9 +5389,11 @@ function checkBattleResolution(){
   if (defendersLeft.length === 0 || invadersLeft.length === 0){
     pendingBattle = null;
     hideRetreatButton();
-    // ★ NEW: battle just ended → unfreeze and refresh VP display
     recalcVP();
   } else {
+    /* ★ Drop dead invaders from the tracked list so the button always
+       anchors to a living attacker. */
+    pendingBattle.invaderIds = invadersLeft.slice();
     showRetreatButton();
   }
 }
