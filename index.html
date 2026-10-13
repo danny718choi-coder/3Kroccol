@@ -1354,6 +1354,15 @@ body.phone-mode #round-bar{ display:none !important; }
   align-items: center;
   justify-items: center;
 }
+/* ★ Hide the 資源點 label under the VP number — inside the bar only */
+#round-bar .left-status-group .vp-label{
+  display:none;
+}
+
+/* ★ Hide the year/season text under the round number — inside the bar only */
+#round-bar .round-text{
+  display:none;
+}
 #round-bar .rb-rounds .round-bar-indicator{
   grid-column: 1;
   width: var(--rb-ind);
