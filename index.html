@@ -1232,7 +1232,6 @@ body.phone-mode .eliminated-pool .pool-content{
   background:rgba(0,0,0,.62);
   border:2px solid var(--gold-color);
   border-radius:10px;
-  max-height:calc(100vh - 20px);
   overflow-y:auto;
   box-shadow:0 6px 20px rgba(0,0,0,.6);
 }
@@ -6986,9 +6985,14 @@ function ensureRoundBar(){
   _roundBarEl.id = 'round-bar';
   document.body.appendChild(_roundBarEl);
 
-  /* ★ Match the current UI scale so the bar is right from the first open */
+  /* ★ Match the current UI scale + size the bar to the map's height */
   if(scaleSupported && typeof currentScale === 'number' && currentScale > 0){
     try{ _roundBarEl.style.zoom = currentScale; }catch(e){}
+  }
+  {
+    const s = (typeof currentScale === 'number' && currentScale > 0) ? currentScale : 1;
+    const cap = Math.max(200, Math.round((window.innerHeight - 20) / s));
+    _roundBarEl.style.height = Math.min(950, cap) + 'px';
   }
   
   if(!_roundBarObserver){
@@ -7289,7 +7293,13 @@ window.onload=()=>{
   checkForAutosave();
   document.getElementById('auto-vp').addEventListener('change',(e)=>{updateAutoStates();if(e.target.checked)recalcVP();});  document.getElementById('auto-turn').addEventListener('change',updateAutoStates);
 };
-window.addEventListener('resize',updateIndicator);
+window.addEventListener('resize', () => {
+  const rb = document.getElementById('round-bar');
+  if(!rb) return;
+  const s = (typeof currentScale === 'number' && currentScale > 0) ? currentScale : 1;
+  const cap = Math.max(200, Math.round((window.innerHeight - 20) / s));
+  rb.style.height = Math.min(950, cap) + 'px';
+});
 </script>
 <!-- ==================== v2.0 ONLINE PATCH (fixed) ==================== -->
 <script>
