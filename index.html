@@ -108,18 +108,22 @@
   box-shadow:0 6px 12px rgba(255,71,26,.35);
 }
 
-/* ── ENABLED state: green interior on both buttons + ring in side color ── */
+/* ── ENABLED state: fully green — overrides the blue / red side colours.
+   Higher specificity (0,4,0) so it also beats .semirandom-btn.side-cao / .side-anti
+   and their :hover variants. ── */
+.semirandom-widget.active .semirandom-btn.side-cao,
+.semirandom-widget.active .semirandom-btn.side-anti,
 .semirandom-widget.active .semirandom-btn{
   border-color:#44ff88;
   color:#d8ffd8;
   background:linear-gradient(180deg,#1a3a1a,#0a1a0a);
   box-shadow:0 0 14px rgba(68,255,136,.55);
 }
-.semirandom-widget.active.side-cao .semirandom-btn{
-  box-shadow:0 0 14px rgba(68,255,136,.55), 0 0 0 3px rgba(51,133,255,.55);
-}
-.semirandom-widget.active.side-anti .semirandom-btn{
-  box-shadow:0 0 14px rgba(68,255,136,.55), 0 0 0 3px rgba(255,71,26,.55);
+.semirandom-widget.active .semirandom-enable-btn{
+  border-color:#44ff88;
+  color:#c8ffc8;
+  background:linear-gradient(180deg,#1a5a1a,#0e3a0e);
+  box-shadow:0 0 14px rgba(68,255,136,.5);
 }
 .semirandom-widget.active .semirandom-enable-btn{
   border-color:#44ff88;
@@ -376,13 +380,150 @@ body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background-color:var
 .round-num{position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);font-size:54px;line-height:1;color:#111827}
 .round-text{position:absolute;bottom:8px;left:0;width:100%;text-align:center;font-size:22px;font-weight:bold;color:var(--bg-color)}
 .recovery-area{position:absolute;top:3px;left:3px;right:3px;display:flex;flex-wrap:wrap;gap:2px;justify-content:center;z-index:5}
-#round-indicator{position:absolute;width:var(--indicator-size);height:var(--indicator-size);border:3px solid var(--border-color);border-radius:6px;background-color:var(--cao-color);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:0;cursor:pointer;transition:all .3s ease,background-color .3s;box-shadow:0 4px 8px rgba(0,0,0,.4);z-index:20;user-select:none;box-sizing:border-box}
-#round-indicator:hover{transform:scale(1.05)}
-#round-indicator::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:var(--indicator-inner);height:var(--indicator-inner);background-color:var(--cao-light-color);border-radius:4px;pointer-events:none;z-index:1;transition:background-color .3s}
-#round-indicator.anti-cao{background-color:var(--anti-cao-color)}
-#round-indicator.anti-cao::before{background-color:var(--anti-cao-light-color)}
-.indicator-label{color:black;font-size:32px;font-weight:bold;line-height:1;z-index:2;position:relative}
-#indicator-num{color:black;font-size:32px;font-weight:bold;line-height:1;z-index:2;position:relative}
+/* ★ Round indicator styled as a 3-HP troop piece.
+   Whole tile (outer sq + inner sq + 回合 text + HP boxes) rotates
+   together as one unit, and flips on round change. */
+#round-indicator{
+  position:absolute;
+  width:var(--box-size);            /* ← was --indicator-size (110px) */
+  height:var(--box-size);           /* ← matches round-box exactly  */
+  cursor:pointer;
+  z-index:20;
+  user-select:none;
+  box-sizing:border-box;
+  perspective:1000px;
+  transition:left .3s ease,top .3s ease;
+}
+#round-indicator:hover{ transform:scale(1.05); }
+
+.ri-3d{
+  width:100%;height:100%;
+  position:relative;
+  transform-style:preserve-3d;
+  transition:transform .55s ease;
+}
+#round-indicator.flipped .ri-3d{ transform:rotateY(180deg); }
+
+.ri-side{
+  position:absolute;inset:0;
+  backface-visibility:hidden;
+  box-sizing:border-box;
+  border-radius:6px;
+  box-shadow:0 4px 8px rgba(0,0,0,.4);   /* shadow stays axis-aligned */
+}
+.ri-side.ri-back{ transform:rotateY(180deg); }
+
+/* ★ The visible tile (outer colour + border + inner square + HP + 回合)
+   now lives HERE, so the WHOLE square rotates as one rigid body. */
+.ri-rot-layer{
+  position:absolute;inset:0;
+  transform:rotate(var(--ri-rot,0deg));
+  transition:transform .5s ease, background-color .3s;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  border:3px solid var(--border-color);
+  border-radius:6px;
+  box-sizing:border-box;
+  background-color:var(--cao-color);   /* default; overridden below */
+}
+/* ★ Back face counter-rotates so its rotation reads the same on screen */
+.ri-side.ri-back .ri-rot-layer{
+  transform:rotate(calc(-1 * var(--ri-rot,0deg)));
+}
+/* ★ Corner dot — makes rotation AND flip visibly obvious (dot travels corners) */
+.ri-rot-layer::before{
+  content:'';
+  position:absolute;
+  top:8px; right:8px;
+  width:14px; height:14px;
+  background:rgba(255,255,255,.78);
+  border-radius:50%;
+  box-shadow:0 0 4px rgba(0,0,0,.55);
+  pointer-events:none;
+  z-index:5;
+}
+/* ★ Semantic colour from the widget class (front face default) */
+#round-indicator.anti-cao .ri-rot-layer{
+  background-color:var(--anti-cao-color);
+}
+/* ★ R/B ALTERNATION ON FLIP:
+     front face = semantic colour; back face = OPPOSITE colour.
+     So every flip visibly swaps Blue ↔ Red. */
+#round-indicator.cao      .ri-side.ri-back .ri-rot-layer{ background-color:var(--anti-cao-color); }
+#round-indicator.anti-cao .ri-side.ri-back .ri-rot-layer{ background-color:var(--cao-color); }
+
+/* Inner light square — moves with the rot layer */
+.ri-inner-square{
+  position:absolute;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:var(--indicator-inner);
+  height:var(--indicator-inner);
+  background-color:var(--cao-light-color);
+  border-radius:4px;
+  transition:background-color .3s;
+}
+#round-indicator.anti-cao .ri-inner-square{
+  background-color:var(--anti-cao-light-color);
+}
+
+/* 回合 label — rotates with the tile (matches troop-piece feel) */
+.indicator-label{
+  color:black;
+  font-size:32px;
+  font-weight:bold;
+  line-height:1;
+  position:relative;
+  z-index:2;
+}
+
+/* HP boxes — laid out like the troop-piece's HP indicators */
+.ri-hp{ position:absolute;display:flex;z-index:3; }
+.ri-hp span{
+  display:block;width:9px;height:9px;
+  background-color:#fff;border-radius:2px;
+  box-shadow:0 0 2px rgba(0,0,0,.45);
+}
+.ri-hp.ri-top{
+  top:3px;left:50%;transform:translateX(-50%);
+  flex-direction:row;gap:5px;
+}
+.ri-hp.ri-right{
+  right:3px;top:50%;transform:translateY(-50%);
+  flex-direction:column;gap:5px;
+}
+.ri-hp.ri-bottom{
+  bottom:3px;left:50%;transform:translateX(-50%);
+  flex-direction:row;gap:5px;
+}
+
+/* HP box layer rotates within the tile; positions mirror the troop-piece layout */
+.ri-hp-layer{
+  position:absolute;inset:0;
+  transition:transform .4s ease;
+  transform:rotate(var(--ri-rot,0deg));
+  pointer-events:none;
+  z-index:3;
+}
+.ri-hp{ position:absolute;display:flex; }
+.ri-hp span{
+  display:block;width:9px;height:9px;
+  background-color:#fff;border-radius:2px;
+  box-shadow:0 0 2px rgba(0,0,0,.45);
+}
+.ri-hp.ri-top{
+  top:3px;left:50%;transform:translateX(-50%);
+  flex-direction:row;gap:5px;
+}
+.ri-hp.ri-right{
+  right:3px;top:50%;transform:translateY(-50%);
+  flex-direction:column;gap:5px;
+}
+.ri-hp.ri-bottom{
+  bottom:3px;left:50%;transform:translateX(-50%);
+  flex-direction:row;gap:5px;
+}
 .map-and-diplo{display:flex;gap:20px;align-items:flex-start;margin-top:-40px}
 .map-box{width:1450px;height:950px;background:#f5ecd5;border:3px solid var(--border-color);border-radius:12px;box-sizing:border-box;position:relative;flex:none;box-shadow:inset 0 0 40px rgba(90,60,20,.12);overflow:hidden}
 /* ==== provinces: transparent hit-area boxes; all visuals drawn by the SVG ==== */
@@ -800,7 +941,28 @@ body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background-color:var
 
 
 </div>
-<div id="round-indicator" class="cao" onclick="advanceRoundState()"><span class="indicator-label">回合</span><span id="indicator-num">3</span></div>
+<div id="round-indicator" class="cao" onclick="handleRoundIndicatorClick(event)">
+  <div class="ri-3d">
+    <div class="ri-side ri-front">
+      <div class="ri-rot-layer">
+        <div class="ri-inner-square"></div>
+        <div class="ri-hp ri-top"><span></span><span></span><span></span></div>
+        <div class="ri-hp ri-right"><span></span><span></span></div>
+        <div class="ri-hp ri-bottom"><span></span></div>
+        <span class="indicator-label">回合</span>
+      </div>
+    </div>
+    <div class="ri-side ri-back">
+      <div class="ri-rot-layer">
+        <div class="ri-inner-square"></div>
+        <div class="ri-hp ri-top"><span></span><span></span><span></span></div>
+        <div class="ri-hp ri-right"><span></span><span></span></div>
+        <div class="ri-hp ri-bottom"><span></span></div>
+        <span class="indicator-label">回合</span>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="map-and-diplo">
 <div class="map-box">
@@ -2583,7 +2745,7 @@ function onScaleSliderInput(v){
 function nudgeScale(delta){
   const slider = document.getElementById('scale-slider');
   const cur = slider ? parseInt(slider.value) : Math.round(displayScale * 100);
-  const next = Math.max(50, Math.min(200, cur + delta));
+  const next = Math.max(25, Math.min(200, cur + delta));
   setScale(next / 100);
 }
 function applyFallbackScale(gb,v){
@@ -2681,14 +2843,11 @@ function updateSemiRandomUI(){
   }
   if(enLbl) enLbl.textContent = LUCK_STATE.enabled ? '啟用中' : '啟用';
 }
-/* ★ Consume one activation (like 抗曹's `needs-roll` flag):
-   reads enabled + side, toggles the widget OFF FIRST, then returns captured data. */
+/* ★ Persistent toggle — stays ON across rolls until the user turns it off.
+   Still returns the active side so per-roll code paths work unchanged. */
 function consumeSemiRandom(){
   if(!LUCK_STATE.enabled) return null;
-  const side = LUCK_STATE.activeSide || 'cao';
-  LUCK_STATE.enabled = false;
-  updateSemiRandomUI();
-  return { side };
+  return { side: LUCK_STATE.activeSide || 'cao' };
 }
 function resetLuckDebt(){
   LUCK_STATE.cao.debt = 0;
@@ -3317,16 +3476,58 @@ function autoFlipEmperor(){const e=document.getElementById('emperor-piece');if(e
 
 function updateIndicator(){
   const ind=document.getElementById('round-indicator');
-  const num=document.getElementById('indicator-num');
-  num.innerText=stateSequence[stateIndex].num;
+
   ind.classList.remove('cao','anti-cao');
   const baseColor = stateSequence[stateIndex].color;
   const actualColor = isCaoCaoTurn ? baseColor : (baseColor === 'cao' ? 'anti-cao' : 'cao');
   ind.classList.add(actualColor);
-  const t=document.getElementById('round-'+currentRound);
-  const l=t.offsetLeft+(t.offsetWidth/2)-(ind.offsetWidth/2);
-  const tp=t.offsetTop+(t.offsetHeight/2)-(ind.offsetHeight/2);
-  ind.style.left=l+'px';ind.style.top=tp+'px';
+
+  // ★ Rotate 0 → -90 → -180 as stateIndex goes 3 → 2 → 1 (per pair of turns)
+  const rot = -Math.floor(stateIndex / 2) * 90;
+  ind.style.setProperty('--ri-rot', rot + 'deg');
+
+  // ★ Flip to back on even rounds; front on odd rounds
+  ind.classList.toggle('flipped', (currentRound % 2 === 0));
+
+  const t = document.getElementById('round-'+currentRound);
+  const l  = t.offsetLeft + (t.offsetWidth  / 2) - (ind.offsetWidth  / 2);
+  const tp = t.offsetTop  + (t.offsetHeight / 2) - (ind.offsetHeight / 2);
+  ind.style.left = l + 'px';
+  ind.style.top  = tp + 'px';
+}
+
+/* ★ New click handler: left half = step back, right half = step forward */
+function handleRoundIndicatorClick(e){
+  if (e) e.stopPropagation();
+  const rect = e.currentTarget.getBoundingClientRect();
+  const clickX = e.clientX - rect.left;
+  if (clickX < rect.width / 2) {
+    stepRoundState(-1);
+  } else {
+    stepRoundState(1);
+  }
+}
+
+/* ★ Manual step -1 / +1 through the state sequence.
+   Forward uses the existing advanceRoundState (which handles recovery,
+   auto-flips, round transitions, and the 抗曹 prompt).
+   Backward just steps indices — no recovery reversal. */
+function stepRoundState(delta){
+  if (gameOver) return;
+  if (delta > 0) {
+    advanceRoundState();
+    return;
+  }
+  // Backward
+  if (stateIndex === 0) {
+    if (currentRound <= 1) return;          // already at the very start
+    currentRound--;
+    stateIndex = stateSequence.length - 1;
+  } else {
+    stateIndex--;
+  }
+  updateIndicator();
+  scheduleAutoSave();
 }
 function flipStrategist(el){
   el.classList.toggle('flipped');
@@ -5265,12 +5466,12 @@ html+='<h3>顯示比例</h3>';
 html+='<div style="display:flex;align-items:center;gap:12px;margin:12px 0 2px">';
 html+='<button class="scale-nudge-btn" onclick="nudgeScale(-5)" title="−5%">−</button>';
 html+='<input type="range" id="scale-slider" class="scale-slider" '
-    +'min="50" max="200" step="5" value="'+Math.round(displayScale*100)+'" '
+    +'min="25" max="200" step="5" value="'+Math.round(displayScale*100)+'" '
     +'oninput="onScaleSliderInput(this.value)">';
 html+='<button class="scale-nudge-btn" onclick="nudgeScale(5)" title="+5%">+</button>';
 html+='</div>';
 html+='<div style="display:flex;justify-content:space-between;font-size:11px;color:#888;padding:0 56px 0 56px">';
-html+='<span>50%</span><span>100%</span><span>200%</span>';
+html+='<span>25%</span><span>100%</span><span>200%</span>';
 html+='</div>';
 html+='<div class="scale-indicator" style="text-align:center;margin-top:8px">當前：<b id="scale-display">'+Math.round(displayScale*100)+'%</b></div>';
 	html+='<h3>除錯顯示</h3>';
