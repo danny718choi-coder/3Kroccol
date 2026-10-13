@@ -3455,6 +3455,11 @@ function setScale(v){
   const gb=document.getElementById('game-board');
   if(scaleSupported){try{gb.style.zoom=currentScale;}catch(e){scaleSupported=false;applyFallbackScale(gb,currentScale);}}
   else{applyFallbackScale(gb,currentScale);}
+/* ★ The round-bar lives outside #game-board, so zoom it explicitly */
+  const rb = document.getElementById('round-bar');
+  if(rb){
+    if(scaleSupported){ try{ rb.style.zoom = currentScale; }catch(e){} }
+  }
   const disp=document.getElementById('scale-display');
   if(disp) disp.textContent=Math.round(v*100)+'%';
   const slider = document.getElementById('scale-slider');
@@ -6981,6 +6986,11 @@ function ensureRoundBar(){
   _roundBarEl.id = 'round-bar';
   document.body.appendChild(_roundBarEl);
 
+  /* ★ Match the current UI scale so the bar is right from the first open */
+  if(scaleSupported && typeof currentScale === 'number' && currentScale > 0){
+    try{ _roundBarEl.style.zoom = currentScale; }catch(e){}
+  }
+  
   if(!_roundBarObserver){
     _roundBarObserver = new MutationObserver(() => {
       if(!roundBarVisible) return;
