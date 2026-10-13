@@ -194,9 +194,15 @@ body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background-color:var
 .game-over-banner.cao-wins .go-inner h2{color:#6fb6ff}
 .game-over-banner.anti-wins .go-inner h2{color:#ff7b7b}
 .go-inner p{margin:0 0 22px;font-size:18px;color:#d0d0d0;letter-spacing:2px}
-.go-inner button{padding:10px 26px;font-size:16px;font-weight:bold;border-radius:8px;border:2px solid var(--gold-color);background:#000;color:var(--gold-color);cursor:pointer;font-family:inherit;letter-spacing:3px}
-.go-inner button:hover{background:#1a1a1a}
-
+.go-buttons{display:flex;gap:14px;justify-content:center;align-items:center}
+.go-inner button.close-btn{
+  border-color:#666;
+  color:#cfcfcf;
+  letter-spacing:2px;
+  font-size:15px;
+  padding:10px 22px;
+}
+.go-inner button.close-btn:hover{background:#262626;color:#fff;border-color:#999}
 /* ==== NEW: continue (resume autosave) button ==== */
 .reset-btn.continue-btn{
   background:linear-gradient(180deg,#1a5a1a,#0e3a0e);
@@ -873,315 +879,6 @@ body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background-color:var
 .scale-nudge-btn:hover{background:#444;border-color:var(--gold-color)}
 .scale-nudge-btn:active{background:#222}
 /* ══════════════════════════════════════════════════════════════════
-   ★ PHONE MODE — compact landscape layout
-   JS moves elements into `.pm-main` > `.pm-left` / `.pm-mid` /
-   `.pm-right` columns, then game-board becomes a flex column:
-     [ 3-col main area ][ title+settings ][ external | eliminated ]
-   ══════════════════════════════════════════════════════════════════ */
-body.phone-mode{
-  padding: 0;
-  margin: 0;
-  height: auto;
-  min-height: calc(100dvh + 140px);   /* ★ extra room below → user can scroll → Safari hides its bars */
-  width: 100vw;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-body.phone-mode #game-board{
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 3px;
-  box-sizing: border-box;
-  max-width: none;
-  overflow: hidden;
-  height: 100dvh;                     /* fills current viewport; JS adjusts to innerHeight/scale */
-  flex-shrink: 0;
-}
-
-/* Empty wrappers after JS shuffle */
-body.phone-mode .status-row,
-body.phone-mode .map-and-diplo,
-body.phone-mode .bottom-controls-row,
-body.phone-mode .rule-text,
-body.phone-mode #round-indicator{ display: none; }
-
-/* ───── 3-column main area ───── */
-body.phone-mode .pm-main{
-  flex: 1 1 auto;
-  display: flex;
-  gap: 3px;
-  min-height: 0;
-  min-width: 0;
-}
-body.phone-mode .pm-col{
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-height: 0;
-  min-width: 0;
-}
-body.phone-mode .pm-left {
-  flex: 0 0 76px; width: 76px; overflow: hidden;
-}
-body.phone-mode .pm-mid {
-  flex: 1 1 auto; min-width: 0; overflow: hidden; position: relative;
-}
-body.phone-mode .pm-right {
-  flex: 0 0 108px; width: 108px; overflow: hidden;
-}
-
-/* ───── LEFT COLUMN ───── */
-body.phone-mode .pm-left > *{ margin: 0 !important; }
-
-/* Dice block */
-body.phone-mode .pm-left .dice-section{
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 2px;
-  border: 2px solid var(--border-color);
-  border-radius: 5px;
-  background: rgba(0,0,0,.3);
-}
-body.phone-mode .semirandom-widget{
-  width: 100%; height: auto; margin: 0; gap: 1px;
-  flex-direction: row; flex-shrink: 0;
-}
-body.phone-mode .semirandom-btn,
-body.phone-mode .semirandom-enable-btn{
-  height: 18px; font-size: 8px;
-  border-width: 1px; border-radius: 3px;
-  padding: 0 1px; flex: 1 1 auto;
-}
-body.phone-mode .semirandom-emoji{ font-size: 8px; }
-body.phone-mode .semirandom-text { font-size: 8px; }
-
-body.phone-mode .dice-group{
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 2px; justify-items: center;
-}
-body.phone-mode .dice{
-  width: 40px !important; height: 40px !important;
-  border-width: 2px; border-radius: 4px;
-}
-body.phone-mode .dice-dots{ padding: 4px; }
-body.phone-mode .dot{ width: 6px; height: 6px; }
-
-body.phone-mode .pm-left .roll-btn{
-  width: 100% !important; height: 20px !important;
-  font-size: 9px; border-width: 1px; border-radius: 3px;
-  flex-shrink: 0; padding: 0;
-}
-body.phone-mode .pm-left .roll-btn.util-btn{ font-size: 8px; line-height: 1; }
-
-/* Turn + VP */
-body.phone-mode .pm-left .left-status-group{
-  display: flex; flex-direction: row; gap: 2px;
-  justify-content: center; flex-shrink: 0;
-}
-body.phone-mode .pm-left .box-col{ gap: 1px; }
-body.phone-mode .pm-left .status-box{
-  width: 46px; height: 46px;
-  border-width: 2px; border-radius: 4px;
-}
-body.phone-mode .pm-left .turn-middle{ width: 38px; height: 38px; border-radius: 3px; }
-body.phone-mode .pm-left .turn-inner { width: 26px; height: 26px; border-radius: 2px; }
-body.phone-mode .pm-left .turn-inner span{ font-size: 11px; }
-body.phone-mode .pm-left .vp-middle #score-display{ font-size: 16px; padding-bottom: 6px; }
-body.phone-mode .pm-left .vp-label{ font-size: 7px; bottom: 1px; }
-body.phone-mode .pm-left .score-box button{ font-size: 11px; }
-body.phone-mode .pm-left .auto-check{ font-size: 7px; gap: 1px; }
-body.phone-mode .pm-left .auto-check input{ width: 9px; height: 9px; }
-
-/* Available pool */
-body.phone-mode .pm-left .available-pool{
-  flex: 1 1 auto; min-height: 30px;
-  overflow-y: auto; padding: 2px; gap: 2px;
-  display: flex; flex-direction: column;
-  border-width: 2px; border-radius: 5px;
-}
-body.phone-mode .pm-left .available-pool > .pool-label{
-  font-size: 9px; text-align: center; flex-shrink: 0;
-}
-body.phone-mode .pm-left .available-pool .pool-content{
-  display: flex; flex-wrap: wrap; gap: 1px;
-  justify-content: center; align-content: flex-start;
-}
-
-/* Strategists */
-body.phone-mode .pm-left .strategist-section{
-  flex: 0 0 auto; display: flex; flex-direction: column;
-  padding: 2px; gap: 2px; border-width: 2px;
-  border-radius: 5px; width: auto;
-}
-body.phone-mode .pm-left .strategist-section > .pool-label{
-  font-size: 9px; text-align: center;
-}
-body.phone-mode .pm-left .strategist-row{
-  display: flex; flex-wrap: wrap; gap: 1px; justify-content: center;
-}
-body.phone-mode .pm-left .strategist-piece{ width: 28px; height: 28px; }
-body.phone-mode .pm-left .strategist-inner,
-body.phone-mode .pm-left .strategist-inner-back{
-  width: 22px; height: 22px;
-  font-size: 8px; padding: 1px;
-  letter-spacing: 0;
-}
-body.phone-mode .pm-left .strat-back-bg{ width: 10px; height: 16px; }
-body.phone-mode .pm-left .strat-back-bg span{ font-size: 8px; }
-
-/* Pool troops in phone mode — small */
-body.phone-mode .troop-wrapper,
-body.phone-mode .troop-piece{
-  width: 30px; height: 30px;
-}
-body.phone-mode .troop-piece{ border-width: 1px; border-radius: 3px; }
-body.phone-mode .troop-inner{ width: 20px; height: 20px; }
-body.phone-mode .troop-name-v{ font-size: 7px; top: 1px; left: 1px; }
-body.phone-mode .troop-combat{ font-size: 11px; right: 1px; top: 0; }
-body.phone-mode .hp-indicator span{ width: 3px; height: 3px; border-radius: 1px; }
-body.phone-mode .hp-indicator.hp-top,
-body.phone-mode .hp-indicator.hp-bottom{ gap: 1px; }
-body.phone-mode .hp-indicator.hp-right,
-body.phone-mode .hp-indicator.hp-left{ gap: 1px; }
-body.phone-mode .troop-buttons{ display: none !important; }
-
-/* ───── RIGHT COLUMN ───── */
-body.phone-mode .pm-right .rounds-group{
-  flex: 0 0 auto;
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 2px; margin: 0;
-}
-body.phone-mode .pm-right .round-box{
-  width: auto; height: 40px;
-  border-width: 2px; border-radius: 4px;
-}
-body.phone-mode .pm-right .round-num{ font-size: 16px; }
-body.phone-mode .pm-right .round-text{ font-size: 7px; bottom: 1px; }
-body.phone-mode .pm-right .recovery-area{ top: 1px; left: 1px; right: 1px; gap: 1px; }
-body.phone-mode .pm-right .troop-badge{ font-size: 7px; padding: 0 2px; }
-body.phone-mode .pm-right .troop-badge.count-1{ font-size: 10px; padding: 1px 3px; }
-body.phone-mode .pm-right .troop-badge.count-2{ font-size: 8px; padding: 0 2px; }
-
-body.phone-mode .pm-right .diplo-column{
-  flex: 1 1 auto; min-height: 0;
-  overflow-y: auto; overflow-x: hidden;
-  width: 100%; display: flex; flex-direction: column;
-  gap: 1px; margin: 0; padding: 0;
-}
-body.phone-mode .diplo-header{
-  height: 16px; font-size: 10px;
-  letter-spacing: 1px; border-radius: 2px;
-}
-body.phone-mode .diplo-content{ min-height: 52px; border-width: 2px; border-radius: 4px; }
-body.phone-mode .diplo-content.empty{ min-height: 38px; }
-body.phone-mode .diplo-content.has-1-2{ min-height: 52px; }
-body.phone-mode .diplo-content .top-text,
-body.phone-mode .diplo-content .bottom-text{ font-size: 7px; padding: 1px; line-height: 1.2; }
-body.phone-mode .piece-area{
-  grid-template-columns: repeat(2, 30px);
-  grid-template-rows: repeat(2, 30px);
-  min-height: 60px;
-}
-body.phone-mode .diplo-content.has-1-2 .piece-area{
-  min-height: 30px; grid-template-rows: 30px;
-}
-body.phone-mode .diplo-content.empty .piece-area{ min-height: 0; }
-body.phone-mode .chess-piece{ width: 30px; height: 30px; }
-body.phone-mode .chess-front,
-body.phone-mode .chess-back{
-  padding: 2px; font-size: 9px;
-  letter-spacing: 0; border-radius: 3px; border-width: 1px;
-}
-body.phone-mode .chess-front .dice-icon,
-body.phone-mode .chess-back .dice-icon{
-  width: 11px; height: 11px;
-  padding: 1px; border-width: 1px;
-}
-body.phone-mode .dice-icon .dot{ width: 2px; height: 2px; }
-body.phone-mode .back-text-bg{ width: 11px; height: 17px; }
-body.phone-mode .back-text-bg span{ font-size: 9px; }
-body.phone-mode .emperor-piece{ left: 2px; bottom: 2px; }
-body.phone-mode .emperor-piece .strat-back-bg{ width: 13px; height: 22px; }
-body.phone-mode .emperor-piece .strat-back-bg span{ font-size: 8px; }
-body.phone-mode .resource-circle{ width: 16px; height: 16px; font-size: 11px; margin-top: 1px; }
-body.phone-mode .region-name{ font-size: 20px; }
-body.phone-mode .map-region-label{ font-size: 20px; }
-
-/* ───── BOTTOM ROW: title + settings ───── */
-body.phone-mode .top-row{
-  flex: 0 0 26px;                 /* ★ fixed 26px height */
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 4px !important;
-  padding: 0 4px !important;
-  margin: 0 !important;
-  min-height: 26px !important;
-  border: 2px solid var(--border-color);
-  border-radius: 5px;
-  background: rgba(0,0,0,.3);
-  overflow: hidden;
-}
-body.phone-mode .game-title{ font-size: 12px !important; letter-spacing: 1px !important; }
-body.phone-mode .top-settings-buttons .reset-btn,
-body.phone-mode .top-settings-buttons .roll-btn{
-  width: 26px; height: 22px; font-size: 6px; border-width: 1px; border-radius: 3px; padding: 0;
-}
-body.phone-mode .game-title{
-  font-size: 14px !important;
-  letter-spacing: 1px !important;
-  margin: 0 !important;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-body.phone-mode .top-settings-buttons{
-  gap: 2px !important;
-  flex-wrap: nowrap !important;
-  justify-content: flex-end !important;
-}
-body.phone-mode .top-settings-buttons .reset-btn,
-body.phone-mode .top-settings-buttons .roll-btn{
-  width: 30px; height: 30px;
-  font-size: 7px;
-  border-width: 1px;
-  border-radius: 3px;
-  padding: 1px;
-  line-height: 1;
-  flex-shrink: 0;
-}
-body.phone-mode .top-settings-buttons .roll-btn.util-btn{ font-size: 7px; }
-
-/* ───── POOLS at the bottom ───── */
-body.phone-mode .external-pool,
-body.phone-mode .eliminated-pool{
-  flex: 0 0 auto;
-  padding: 0 4px; gap: 2px; margin: 0;
-  min-height: 20px; max-height: 20px;
-  border-width: 1px; border-radius: 4px;
-  overflow: hidden;
-  align-items: center;
-}
-body.phone-mode .external-pool .pool-header,
-body.phone-mode .eliminated-pool .pool-header{ height: 18px; padding: 0; }
-body.phone-mode .external-pool .pool-label,
-body.phone-mode .eliminated-pool .pool-label{ font-size: 9px; }
-body.phone-mode .external-pool .pool-header,
-body.phone-mode .eliminated-pool .pool-header{ padding: 0; }
-body.phone-mode .pool-label{ font-size: 9px; }
-body.phone-mode .pool-toggle{ font-size: 10px; }
-body.phone-mode .external-pool .pool-content,
-body.phone-mode .eliminated-pool .pool-content{
-  display: flex; flex-wrap: wrap; gap: 1px;
-  justify-content: center; align-content: flex-start;
-  max-height: 50px; overflow-y: auto;
-}
-/* ══════════════════════════════════════════════════════════════════
    ★ Round-bar toggle — sits right of round 6, same height as a
    round box, ~1/3 the width. Gold border matches the round strip.
    ══════════════════════════════════════════════════════════════════ */
@@ -1342,9 +1039,6 @@ body.phone-mode .eliminated-pool .pool-content{
 #round-bar .round-bar-indicator .ri-hp.ri-bottom{ gap:4px; }
 #round-bar .round-bar-indicator .ri-hp.ri-right{ gap:4px; }
 
-/* Phone mode: hide the toggle button with the rest of .status-row */
-body.phone-mode .round-bar-toggle-btn{ display:none !important; }
-body.phone-mode #round-bar{ display:none !important; }
 /* Grid: single column. Indicator overlays whichever round box
    shares its grid-row. */
 #round-bar .rb-rounds{
@@ -1988,7 +1682,10 @@ body.phone-mode #round-bar{ display:none !important; }
   <div class="go-inner">
     <h2 id="game-over-title">曹操方勝利！</h2>
     <p id="game-over-body">最終資源點：8 / 8</p>
-    <button onclick="performReset()">再來一局</button>
+    <div class="go-buttons">
+      <button onclick="performReset()">再來一局</button>
+      <button class="close-btn" onclick="closeGameOverBanner()">關閉</button>
+    </div>
   </div>
 </div>
 <div id="coord-display" style="display:none;position:fixed;pointer-events:none;z-index:999999;background:rgba(0,0,0,.9);color:#ffd700;border:2px solid #ffd700;border-radius:6px;padding:6px 10px;font-family:'Consolas','Courier New',monospace;font-size:13px;font-weight:bold;line-height:1.45;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.6)"></div>
@@ -3239,203 +2936,6 @@ if(act.type === 'move'){
 
   advanceRoundState();
 }
-/* ══════════════════════════════════════════════════════════════════
-   ★ PHONE MODE — restructures the DOM so the whole board fits
-   a landscape phone viewport (e.g. iPhone 15 rotated).
-   ══════════════════════════════════════════════════════════════════ */
-let phoneMode = (()=>{
-  try { return localStorage.getItem('caowei_phoneMode') === '1'; }
-  catch(e){ return false; }
-})();
-let _pmSaved = null;    // saved DOM positions for restore
-let _pmPoolState = null; // saved pool collapsed states
-
-function togglePhoneMode(on){
-  phoneMode = !!on;
-  try { localStorage.setItem('caowei_phoneMode', phoneMode ? '1' : '0'); } catch(e){}
-  applyPhoneMode();
-  if (typeof renderSettings === 'function') renderSettings();
-}
-
-let _pmLastInnerH = 0;
-
-function _pmViewportSize(){
-  // visualViewport gives the *visible* area (excludes Safari bars),
-  // but during the initial "bars shown" state it can be smaller.
-  // We use Math.max of the two to always pick the biggest known viewport.
-  const vv = window.visualViewport;
-  const w = Math.max(window.innerWidth,  vv ? vv.width  : 0);
-  const h = Math.max(window.innerHeight, vv ? vv.height : 0);
-  return { w, h };
-}
-
-function applyPhoneMode(){
-  const gb = document.getElementById('game-board');
-  if (!gb) return;
-
-  if (phoneMode){
-    buildPhoneLayout(gb);
-    document.body.classList.add('phone-mode');
-    collapsePoolsForPhoneMode();
-
-    const s = (typeof currentScale === 'number' && currentScale > 0) ? currentScale : 0.7;
-    const { w, h } = _pmViewportSize();
-    gb.style.width    = Math.round(w / s) + 'px';
-    gb.style.height   = Math.round(h / s) + 'px';
-    gb.style.maxWidth = 'none';
-    _pmLastInnerH = window.innerHeight;
-  } else {
-    document.body.classList.remove('phone-mode');
-    gb.style.width = '';
-    gb.style.height = '';
-    gb.style.maxWidth = '';
-    restorePhoneLayout();
-    restorePoolsFromPhoneMode();
-  }
-
-  setTimeout(() => {
-    updatePhoneMapZoom();
-    if (typeof updateIndicator === 'function') updateIndicator();
-  }, 100);
-}
-
-/* ★ When Safari's bars auto-hide (viewport height grows by ~40–80px),
-   the game-board was sized to the smaller viewport. Snap back to the
-   top and re-fit to the taller viewport so nothing is cut off. */
-window.addEventListener('resize', () => {
-  if (!phoneMode) return;
-  const nowH = window.innerHeight;
-  if (nowH > _pmLastInnerH + 25){
-    // Bars just hid → re-fit and reset scroll
-    _pmLastInnerH = nowH;
-    window.scrollTo({ top: 0, behavior: 'auto' });
-    applyPhoneMode();
-  } else if (nowH < _pmLastInnerH - 25){
-    // Bars came back
-    _pmLastInnerH = nowH;
-    applyPhoneMode();
-  }
-});
-
-/* Some iOS versions only fire visualViewport resize, not window resize */
-if (window.visualViewport){
-  window.visualViewport.addEventListener('resize', () => {
-    if (!phoneMode) return;
-    const nowH = window.innerHeight;
-    if (Math.abs(nowH - _pmLastInnerH) > 25){
-      _pmLastInnerH = nowH;
-      applyPhoneMode();
-    }
-  });
-}
-
-/* Wrap elements into pm-main / pm-left / pm-mid / pm-right */
-function buildPhoneLayout(gb){
-  if (document.querySelector('.pm-main')) return;   // already built
-
-  const diceSection   = document.querySelector('.dice-section');
-  const leftStatus    = document.querySelector('.left-status-group');
-  const availPool     = document.getElementById('available-zone');
-  const stratSection  = document.querySelector('.strategist-section');
-  const mapBox        = document.querySelector('.map-box');
-  const roundsGroup   = document.querySelector('.rounds-group');
-  const diploCol      = document.querySelector('.diplo-column');
-  const roundInd      = document.getElementById('round-indicator');
-
-  const moves = [diceSection, leftStatus, availPool, stratSection,
-                 mapBox, roundsGroup, diploCol, roundInd];
-  _pmSaved = moves.map(el => el ? { el, parent: el.parentNode, next: el.nextSibling } : null)
-                  .filter(Boolean);
-
-  const main = document.createElement('div');
-  main.className = 'pm-main';
-  const left = document.createElement('div');   left.className  = 'pm-col pm-left';
-  const mid  = document.createElement('div');   mid.className   = 'pm-col pm-mid';
-  const right = document.createElement('div');  right.className = 'pm-col pm-right';
-  main.appendChild(left); main.appendChild(mid); main.appendChild(right);
-
-  // Distribute
-  if (diceSection)  left.appendChild(diceSection);
-  if (leftStatus)   left.appendChild(leftStatus);
-  if (availPool)    left.appendChild(availPool);
-  if (stratSection) left.appendChild(stratSection);
-  if (mapBox)       mid.appendChild(mapBox);
-  if (roundsGroup)  right.appendChild(roundsGroup);
-  if (diploCol)     right.appendChild(diploCol);
-
-  gb.insertBefore(main, gb.firstChild);
-
-  // Round indicator: absolute positioned, put it back in game-board
-  if (roundInd) gb.appendChild(roundInd);
-}
-
-function restorePhoneLayout(){
-  const main = document.querySelector('.pm-main');
-  if (main) main.remove();
-  if (_pmSaved){
-    _pmSaved.forEach(({ el, parent, next }) => {
-      if (!parent) return;
-      if (next && next.parentNode === parent) parent.insertBefore(el, next);
-      else parent.appendChild(el);
-    });
-    _pmSaved = null;
-  }
-}
-
-function collapsePoolsForPhoneMode(){
-  _pmPoolState = {
-    ext:  document.getElementById('external-zone')?.classList.contains('collapsed'),
-    elim: document.getElementById('eliminated-zone')?.classList.contains('collapsed')
-  };
-  document.getElementById('external-zone')?.classList.add('collapsed');
-  document.getElementById('eliminated-zone')?.classList.add('collapsed');
-  if (typeof updatePoolToggles === 'function') updatePoolToggles();
-}
-function restorePoolsFromPhoneMode(){
-  if (!_pmPoolState) return;
-  const ext  = document.getElementById('external-zone');
-  const elim = document.getElementById('eliminated-zone');
-  if (ext)  ext.classList.toggle('collapsed',  !!_pmPoolState.ext);
-  if (elim) elim.classList.toggle('collapsed', !!_pmPoolState.elim);
-  if (typeof updatePoolToggles === 'function') updatePoolToggles();
-  _pmPoolState = null;
-}
-
-/* Fit the 1450×950 map-box into the middle column */
-function updatePhoneMapZoom(){
-  const mapBox = document.querySelector('.map-box');
-  if (!mapBox) return;
-  if (!phoneMode){ mapBox.style.zoom = ''; return; }
-
-  const s = (typeof currentScale === 'number' && currentScale > 0) ? currentScale : 0.7;
-  const { w, h } = _pmViewportSize();
-  const vpW = w / s;
-  const vpH = h / s;
-
-  // ★ Slimmer columns → more room for the map
-  const leftCol  = 76;         // was 100
-  const rightCol = 108;        // was 148
-  const gaps     = 3 * 4;      // 4 gaps of 3px
-  const padding  = 3 * 2;
-
-  // ★ Slimmer bottom rows → more vertical room for the map
-  const bottomRow = 28;        // title + settings row (was 40)
-  const poolsRow  = 10;        // collapsed pool headers (was 14)
-  const bottomGap = 3 * 3;
-
-  const availW = Math.max(80, vpW - leftCol - rightCol - gaps - padding);
-  const availH = Math.max(60, vpH - bottomRow - poolsRow - bottomGap - padding);
-
-  // ★ No upper cap — the map can zoom UP to fill the column
-  const zoom = Math.max(0.08, Math.min(availW / 1450, availH / 950));
-
-  mapBox.style.zoom = zoom;
-  mapBox.style.width  = (1450 * zoom) + 'px';
-  mapBox.style.height = (950  * zoom) + 'px';
-}
-
-/* Refit on resize and on UI-scale change */
-window.addEventListener('resize', () => { if (phoneMode) applyPhoneMode(); });
 /* ==== NEW: base visual scale — internally we zoom 0.7, UI shows 100% ==== */
 const BASE_SCALE = 0.7;
 let displayScale = 1.0;                    // what the user sees (1.0 = 100%)
@@ -3466,8 +2966,6 @@ if(slider){
   setTimeout(()=>{
     updateIndicator();
     ['region-henei','region-yingchuan','region-chenliu','region-nanyang','region-runan','region-xiangyang','region-anfeng','region-jiyin','region-langya','region-xiapi','region-huainan','region-qiao','region-pei'].forEach(layoutRegion);
-    // ★ If phone mode is on, re-fit the game-board size + map zoom
-    if (typeof applyPhoneMode === 'function') applyPhoneMode();
   },80);
 }
 function onScaleSliderInput(v){
@@ -3498,11 +2996,11 @@ function applyFallbackScale(gb,v){
    toward the target average is.
    ══════════════════════════════════════════════════════════════════ */
 const LUCK_STATE = {
-  cao:  { debt: 0, strength: 50 },
-  anti: { debt: 0, strength: 50 },
-  base: 3.5,
+  cao:  { debt: 0, strength: 50, base: 3.5 },
+  anti: { debt: 0, strength: 50, base: 3.5 },
+  base: 3.5,          // legacy fallback (unused when per-side base is set)
   enabled: false,
-  activeSide: 'cao'   // ★ which side's luck the button currently targets
+  activeSide: 'cao'
 };
 
 /* Return a d6 value — either uniformly random or semi-random adjusted. */
@@ -3515,9 +3013,9 @@ function getDieRollValue(sideOverride){
 }
 
 function semiRandomDieRoll(side){
-  if(!LUCK_STATE[side]) LUCK_STATE[side] = { debt:0, strength:50 };
+  if(!LUCK_STATE[side]) LUCK_STATE[side] = { debt:0, strength:50, base:3.5 };
   const state = LUCK_STATE[side];
-  const base = LUCK_STATE.base;
+  const base = (state.base !== undefined) ? state.base : (LUCK_STATE.base || 3.5);
   const debt = state.debt || 0;
   const strength = Math.max(0, Math.min(100, state.strength || 50)) / 100;
 
@@ -3543,7 +3041,34 @@ function semiRandomDieRoll(side){
   state.debt = (debt * 0.6) + (value - base);
   return value;
 }
-
+/* Numerical expectation of the next die roll for one side.
+   Uses the same bias transform as semiRandomDieRoll, but does NOT
+   mutate the debt. Used to display 預計下一骰 in the settings panel. */
+function expectedDieValue(side){
+  const state = LUCK_STATE[side];
+  if(!state) return 3.5;
+  const base = (state.base !== undefined) ? state.base : (LUCK_STATE.base || 3.5);
+  if(!LUCK_STATE.enabled) return base;
+  const debt = state.debt || 0;
+  const strength = Math.max(0, Math.min(100, state.strength || 50)) / 100;
+  const N = 600;
+  let sum = 0;
+  for(let i = 0; i < N; i++){
+    const u = (i + 0.5) / N;
+    let p = u;
+    if(strength > 0 && Math.abs(debt) > 0.01){
+      const bias = Math.tanh(debt / 6);
+      const exponent = 1 + Math.abs(bias) * strength * 2.5;
+      if(bias > 0) p = Math.pow(p, exponent);
+      else         p = 1 - Math.pow(1 - p, exponent);
+    }
+    let v = 1 + Math.floor(p * 6);
+    if(v < 1) v = 1;
+    if(v > 6) v = 6;
+    sum += v;
+  }
+  return sum / N;
+}
 /* Toggle helpers */
 function cycleSemiRandomSide(){
   LUCK_STATE.activeSide = (LUCK_STATE.activeSide === 'cao') ? 'anti' : 'cao';
@@ -3583,9 +3108,13 @@ function consumeSemiRandom(){
   if(!LUCK_STATE.enabled) return null;
   return { side: LUCK_STATE.activeSide || 'cao' };
 }
-function resetLuckDebt(){
-  LUCK_STATE.cao.debt = 0;
-  LUCK_STATE.anti.debt = 0;
+function resetLuckDebt(side){
+  if(side === 'cao' || side === 'anti'){
+    LUCK_STATE[side].debt = 0;
+  } else {
+    LUCK_STATE.cao.debt = 0;
+    LUCK_STATE.anti.debt = 0;
+  }
 }
 function setLuckStrength(side, val){
   if(!LUCK_STATE[side]) return;
@@ -3598,9 +3127,11 @@ function changeLuckStrength(side, delta){
   LUCK_STATE[side].strength = Math.max(0, Math.min(100, LUCK_STATE[side].strength + delta));
   renderSettings();
 }
-function setLuckBase(val){
+function setLuckBase(side, val){
   const v = parseFloat(val);
-  if(!isNaN(v) && v >= 1 && v <= 6) LUCK_STATE.base = v;
+  if(isNaN(v) || v < 1 || v > 6) return;
+  if(!LUCK_STATE[side]) return;
+  LUCK_STATE[side].base = v;
   renderSettings();
 }
 
@@ -4248,6 +3779,15 @@ function endGame(){
   const board = document.getElementById('game-board');
   if(board) board.style.pointerEvents = 'none';
 }
+
+/* Hide the game-over banner WITHOUT resetting — lets the player review
+   the final board. The board stays non-interactive; the 重置 button in
+   the top bar can still be used to start a new game. */
+function closeGameOverBanner(){
+  const banner = document.getElementById('game-over-banner');
+  if(banner) banner.classList.remove('show');
+}
+
 function autoFlipPieces(){document.querySelectorAll('#content-liancao .chess-piece, #content-zhongli .chess-piece').forEach(p=>p.classList.remove('flipped'))}
 function autoFlipStrategists(){document.querySelectorAll('.strategist-row .strategist-piece').forEach(p=>p.classList.remove('flipped'))}
 function autoFlipEmperor(){const e=document.getElementById('emperor-piece');if(e)e.classList.remove('flipped');}
@@ -6235,65 +5775,71 @@ function renderSettings(){
   const lianCount=document.querySelectorAll('#content-liancao .chess-piece').length;
   const zhongCount=document.querySelectorAll('#content-zhongli .chess-piece').length;
 
-  const diploLoc={};
+  /* Current area + flipped state for each 立場棋 */
+  const factionAreas = {};
   document.querySelectorAll('.chess-piece').forEach(p=>{
     let faction='';
-    ['liubei','liubiao','zhangxiu','zhangyang','yuanshu','lvbu'].forEach(f=>{if(p.classList.contains('piece-'+f)) faction=f;});
-    const parent=p.parentElement.parentElement;
-    let areaId=parent.id;
-    if(areaId==='eliminated-content') areaId='淘汰';
-    else areaId=areaId.replace('content-','');
-    diploLoc[faction]=areaId+(p.classList.contains('flipped')?' (背面)':'');
+    ['liubei','liubiao','zhangxiu','zhangyang','yuanshu','lvbu'].forEach(f=>{
+      if(p.classList.contains('piece-'+f)) faction=f;
+    });
+    if(!faction) return;
+    let area='unknown';
+    const parent=p.parentElement;
+    if(parent){
+      const content=parent.closest('.diplo-content');
+      if(content) area=content.id;
+      else if(parent.closest('#eliminated-content')) area='eliminated';
+    }
+    factionAreas[faction] = { area, flipped: p.classList.contains('flipped') };
   });
 
   const emp=document.getElementById('emperor-piece');
-  const empState=emp?(emp.classList.contains('flipped')?'背面':'正面'):'—';
-  let stratLines=[];
-  document.querySelectorAll('.strategist-piece').forEach((p,i)=>{
+  const empFlipped = emp ? emp.classList.contains('flipped') : false;
+
+  /* Strategist info */
+  const strategistInfo = [];
+  document.querySelectorAll('.strategist-piece').forEach((p)=>{
     if(p.id==='emperor-piece')return;
     const name=getStrategistName(p)||'?';
-    const par=p.parentElement;
-    let loc='謀士區';
-    if(par&&par.closest('#eliminated-content')) loc='淘汰';
-    stratLines.push(name+': '+(p.classList.contains('flipped')?'背面':'正面')+' — '+loc);
+    const flipped = p.classList.contains('flipped');
+    const inElim = p.parentElement && p.parentElement.closest('#eliminated-content');
+    strategistInfo.push({ name, flipped, location: inElim ? '淘汰' : '謀士區' });
   });
 
   let html='';
-html+='<h3>顯示比例</h3>';
-html+='<div style="display:flex;align-items:center;gap:12px;margin:12px 0 2px">';
-html+='<button class="scale-nudge-btn" onclick="nudgeScale(-5)" title="−5%">−</button>';
-html+='<input type="range" id="scale-slider" class="scale-slider" '
-    +'min="25" max="200" step="5" value="'+Math.round(displayScale*100)+'" '
-    +'oninput="onScaleSliderInput(this.value)">';
-html+='<button class="scale-nudge-btn" onclick="nudgeScale(5)" title="+5%">+</button>';
-html+='</div>';
-html+='<div style="display:flex;justify-content:space-between;font-size:11px;color:#888;padding:0 56px 0 56px">';
-html+='<span>25%</span><span>100%</span><span>200%</span>';
-html+='</div>';
-html+='<div class="scale-indicator" style="text-align:center;margin-top:8px">當前：<b id="scale-display">'+Math.round(displayScale*100)+'%</b></div>';
 
-html+='<h3>顯示模式</h3>';
-html+='<label style="display:flex;align-items:center;gap:8px;color:#fff;font-size:13px;cursor:pointer;user-select:none;margin-bottom:6px;padding:6px 10px;background:rgba(0,0,0,.3);border-radius:6px;">'
-    + '<input type="checkbox" ' + (phoneMode ? 'checked' : '') + ' onchange="togglePhoneMode(this.checked)" '
-    + 'style="width:16px;height:16px;cursor:pointer;accent-color:var(--gold-color)">'
-    + '<span>📱 手機模式（橫向螢幕）</span>'
-    + '</label>';
-html+='<p style="font-size:11px;color:#888;line-height:1.6;margin:4px 0 10px 4px;">開啟後：版面重排為橫向三欄 — 左側為骰子／天時／資源／待命／謀士，中間為地圖，右側為回合列與外交欄；標題與按鈕移到底部，遊戲外部隊與淘汰區自動收起。</p>';
-	html+='<h3>除錯顯示</h3>';
-	html+='<div class="btn-row">';
-	html+='<label style="display:flex;align-items:center;gap:8px;color:#fff;font-size:13px;cursor:pointer;user-select:none">'
-		+ '<input type="checkbox" ' + (coordDebugEnabled ? 'checked' : '') + ' onchange="toggleCoordDebug(this.checked)" '
-		+ 'style="width:16px;height:16px;cursor:pointer;accent-color:var(--gold-color)">'
-		+ '<span>顯示滑鼠座標（SVG 座標 / 部隊單位）</span>'
-		+ '</label>';
-	html+='</div>';
+  /* ── 顯示比例 ── */
+  html+='<h3>顯示比例</h3>';
+  html+='<div style="display:flex;align-items:center;gap:12px;margin:12px 0 2px">';
+  html+='<button class="scale-nudge-btn" onclick="nudgeScale(-5)" title="−5%">−</button>';
+  html+='<input type="range" id="scale-slider" class="scale-slider" '
+      +'min="25" max="200" step="5" value="'+Math.round(displayScale*100)+'" '
+      +'oninput="onScaleSliderInput(this.value)">';
+  html+='<button class="scale-nudge-btn" onclick="nudgeScale(5)" title="+5%">+</button>';
+  html+='</div>';
+  html+='<div style="display:flex;justify-content:space-between;font-size:11px;color:#888;padding:0 56px 0 56px">';
+  html+='<span>25%</span><span>100%</span><span>200%</span>';
+  html+='</div>';
+  html+='<div class="scale-indicator" style="text-align:center;margin-top:8px">當前：<b id="scale-display">'+Math.round(displayScale*100)+'%</b></div>';
+
+  /* ── 除錯顯示 ── */
+  html+='<h3>除錯顯示</h3>';
+  html+='<div class="btn-row">';
+  html+='<label style="display:flex;align-items:center;gap:8px;color:#fff;font-size:13px;cursor:pointer;user-select:none">'
+      + '<input type="checkbox" ' + (coordDebugEnabled ? 'checked' : '') + ' onchange="toggleCoordDebug(this.checked)" '
+      + 'style="width:16px;height:16px;cursor:pointer;accent-color:var(--gold-color)">'
+      + '<span>顯示滑鼠座標（SVG 座標 / 部隊單位）</span>'
+      + '</label>';
+  html+='</div>';
+
+  /* ── 存檔 / 讀檔 ── */
   html+='<h3>存檔 / 讀檔</h3>';
   html+='<div class="btn-row">';
   html+='<button class="dbg-btn success" onclick="openSave()">💾 保存遊戲 (JSON)</button>';
   html+='<button class="dbg-btn" onclick="openLoad()">📂 載入遊戲 (JSON)</button>';
   html+='</div>';
 
-  // ── Section: 除錯：可調整參數 ──
+  /* ── Section: 除錯：可調整參數 ── */
   {
     const key = 'debug-params';
     const collapsed = (_settingsSectionOpen[key] === false) ? ' collapsed' : '';
@@ -6319,10 +5865,10 @@ html+='<p style="font-size:11px;color:#888;line-height:1.6;margin:4px 0 10px 4px
   </td></tr>`;
   html+='</tbody></table>';
   html+='<div class="btn-row"><button class="dbg-btn" onclick="resetConfig()">回復預設值（6 / 7 / 4）</button></div>';
-  html +=   '</div>';   // close section body
-  html += '</div>';     // close settings-section
+  html +=   '</div>';
+  html += '</div>';
 
-  // ── Section: 部隊數值編輯 ──
+  /* ── Section: 部隊數值編輯 ── */
   {
     const key = 'troop-stats';
     const collapsed = (_settingsSectionOpen[key] === false) ? ' collapsed' : '';
@@ -6350,73 +5896,138 @@ html+='<p style="font-size:11px;color:#888;line-height:1.6;margin:4px 0 10px 4px
   });
   html+='</tbody></table>';
   html+='<div class="btn-row"><button class="dbg-btn" onclick="reinitTroopStats()">重新初始化部隊數值</button></div>';
-  html +=   '</div>';   // close section body
-  html += '</div>';     // close settings-section
+  html +=   '</div>';
+  html += '</div>';
 
-
-  // ── ★ NEW: Semi-random dice settings ──
-  html+='<h3>半隨機骰子</h3>';
-  html+='<table><thead><tr><th>參數</th><th>值</th><th>操作</th></tr></thead><tbody>';
+  /* ── Section: 半隨機骰子 ── */
+  {
+    const key = 'semirandom';
+    const collapsed = (_settingsSectionOpen[key] === false) ? ' collapsed' : '';
+    html += '<div class="settings-section' + collapsed + '" data-section-key="' + key + '">';
+    html +=   '<h3 class="settings-section-header" onclick="toggleSettingsSection(this)">';
+    html +=     '<span class="settings-arrow">▼</span>';
+    html +=     '<span>半隨機骰子</span>';
+    html +=   '</h3>';
+    html +=   '<div class="settings-section-body">';
+  }
+  const expCao   = expectedDieValue('cao');
+  const expAnti  = expectedDieValue('anti');
+  const debtCao  = LUCK_STATE.cao.debt  || 0;
+  const debtAnti = LUCK_STATE.anti.debt || 0;
+  const biasLabel = d => d > 0.05 ? '偏低（修正之前偏幸運）'
+                     : d < -0.05 ? '偏高（修正之前偏不幸）' : '中性';
+  html+='<table><thead><tr><th>項目</th><th style="color:#6fb6ff;">曹操方</th><th style="color:#ff7b7b;">反曹方</th></tr></thead><tbody>';
   html+=`<tr>
     <td>啟用狀態</td>
     <td colspan="2"><b style="color:${LUCK_STATE.enabled?'#44ff88':'#888'};">${LUCK_STATE.enabled?'✅ 已啟用':'⭕ 未啟用'}</b>
-      <span style="color:#888;font-size:11px;margin-left:8px;">（由左側「啟用」按鈕控制）</span></td>
+      <span style="color:#888;font-size:11px;margin-left:8px;">（左側「啟用」按鈕控制）</span></td>
   </tr>`;
   html+=`<tr>
-    <td>當前作用方（按鈕切換）</td>
-    <td colspan="2"><b style="color:${LUCK_STATE.activeSide==='cao'?'#6fb6ff':'#ff7b7b'};">${LUCK_STATE.activeSide==='cao'?'🎲 曹操方':'🎲 反曹方'}</b></td>
+    <td>當前作用方</td>
+    <td colspan="2"><b style="color:${LUCK_STATE.activeSide==='cao'?'#6fb6ff':'#ff7b7b'};">${LUCK_STATE.activeSide==='cao'?'🎲 曹操方':'🎲 反曹方'}</b>
+      <span style="color:#888;font-size:11px;margin-left:8px;">（左側 🎲 按鈕切換）</span></td>
   </tr>`;
   html+=`<tr>
-    <td>曹操方 半隨機強度</td>
-    <td><input type="number" min="0" max="100" value="${LUCK_STATE.cao.strength}" onchange="setLuckStrength('cao',this.value)" style="width:70px"></td>
-    <td><button class="dbg-btn" onclick="changeLuckStrength('cao',-10)">−10</button>
+    <td>半隨機強度</td>
+    <td><input type="number" min="0" max="100" value="${LUCK_STATE.cao.strength}" onchange="setLuckStrength('cao',this.value)" style="width:60px">
+        <button class="dbg-btn" onclick="changeLuckStrength('cao',-10)">−10</button>
         <button class="dbg-btn" onclick="changeLuckStrength('cao',10)">+10</button></td>
-  </tr>`;
-  html+=`<tr>
-    <td>反曹方 半隨機強度</td>
-    <td><input type="number" min="0" max="100" value="${LUCK_STATE.anti.strength}" onchange="setLuckStrength('anti',this.value)" style="width:70px"></td>
-    <td><button class="dbg-btn" onclick="changeLuckStrength('anti',-10)">−10</button>
+    <td><input type="number" min="0" max="100" value="${LUCK_STATE.anti.strength}" onchange="setLuckStrength('anti',this.value)" style="width:60px">
+        <button class="dbg-btn" onclick="changeLuckStrength('anti',-10)">−10</button>
         <button class="dbg-btn" onclick="changeLuckStrength('anti',10)">+10</button></td>
   </tr>`;
   html+=`<tr>
-    <td>基準運氣（目標平均值）</td>
-    <td><input type="number" min="1" max="6" step="0.1" value="${LUCK_STATE.base}" onchange="setLuckBase(this.value)" style="width:70px"></td>
-    <td><span style="color:#888;font-size:11px;">預設 3.5</span></td>
+    <td>基準運氣（目標平均）</td>
+    <td><input type="number" min="1" max="6" step="0.1" value="${LUCK_STATE.cao.base}" onchange="setLuckBase('cao',this.value)" style="width:70px"></td>
+    <td><input type="number" min="1" max="6" step="0.1" value="${LUCK_STATE.anti.base}" onchange="setLuckBase('anti',this.value)" style="width:70px"></td>
   </tr>`;
   html+=`<tr>
-    <td>當前累計運氣差</td>
-    <td colspan="2" style="font-family:monospace;font-size:12px;">
-      曹操方：<b style="color:${LUCK_STATE.cao.debt>0?'#ff8080':'#7cff7c'};">${LUCK_STATE.cao.debt.toFixed(2)}</b>
-      ｜ 反曹方：<b style="color:${LUCK_STATE.anti.debt>0?'#ff8080':'#7cff7c'};">${LUCK_STATE.anti.debt.toFixed(2)}</b>
-      <button class="dbg-btn" onclick="resetLuckDebt();renderSettings();" style="margin-left:8px;">重置運氣</button>
-    </td>
+    <td>累計運氣差</td>
+    <td><b style="color:${debtCao>0?'#ff8080':'#7cff7c'};">${debtCao.toFixed(2)}</b>
+        <button class="dbg-btn" onclick="resetLuckDebt('cao');renderSettings();" style="margin-left:6px;">重置</button></td>
+    <td><b style="color:${debtAnti>0?'#ff8080':'#7cff7c'};">${debtAnti.toFixed(2)}</b>
+        <button class="dbg-btn" onclick="resetLuckDebt('anti');renderSettings();" style="margin-left:6px;">重置</button></td>
+  </tr>`;
+  html+=`<tr>
+    <td>預計下一骰期望值</td>
+    <td><b style="color:#ffd54a;">${expCao.toFixed(2)}</b>
+        <span style="color:#888;font-size:11px;margin-left:6px;">${biasLabel(debtCao)}</span></td>
+    <td><b style="color:#ffd54a;">${expAnti.toFixed(2)}</b>
+        <span style="color:#888;font-size:11px;margin-left:6px;">${biasLabel(debtAnti)}</span></td>
   </tr>`;
   html+='</tbody></table>';
-    html+='<p style="font-size:11px;color:#888;line-height:1.6;">💡 半隨機開啟後：擲出 6（失手，戰損判定通常需要骰值 ≤ 戰力）→ 之後傾向擲低（補命中）；擲出 1（必定命中）→ 之後傾向擲高（拉回平均）。<br>強度越高，修正越明顯（0 = 關閉效果，100 = 最強）。<br>🎲 上方按鈕切換曹操方 / 反曹方（各自獨立運氣）；下方「啟用」按鈕開啟後，下一次擲骰會自動消耗此效果。</p>';
-	
-  html+='<h3>當前狀態</h3>';
-  html+='<div class="kv">';
-  html+=`<div class="k">資源點</div><div class="v">${score}</div>`;
-  html+=`<div class="k">當前回合方</div><div class="v">${turn}</div>`;
-  html+=`<div class="k">回合</div><div class="v">第 ${currentRound} 回合</div>`;
-  html+=`<div class="k">狀態索引</div><div class="v">${stateIndex} / ${stateSequence.length-1}（點數 ${stateSequence[stateIndex].num}）</div>`;
-  html+=`<div class="k">反曹棋子數</div><div class="v">${antiCount} / ${CONFIG.maxAntiCao}</div>`;
-  html+=`<div class="k">聯曹棋子數</div><div class="v">${lianCount}</div>`;
-  html+=`<div class="k">中立棋子數</div><div class="v">${zhongCount}</div>`;
-  html+=`<div class="k">漢獻帝</div><div class="v">${empState}</div>`;
-  html+=`<div class="k">已淘汰勢力</div><div class="v">${fallenFactions.size===0?'無':Array.from(fallenFactions).join('、')}</div>`;
-  html+='</div>';
+  html+='<div class="btn-row"><button class="dbg-btn" onclick="resetLuckDebt();renderSettings();">重置雙方運氣</button></div>';
+  html+='<p style="font-size:11px;color:#888;line-height:1.6;">💡 擲出 6 → 之後傾向擲低；擲出 1 → 之後傾向擲高。強度越高修正越明顯（0 = 關閉，100 = 最強）。<br>「預計下一骰」= 依目前累計運氣差計算出的期望值（中性 = 基準運氣）。</p>';
+  html +=   '</div>';
+  html += '</div>';
 
-  html+='<h3>立場棋位置</h3><table><thead><tr><th>勢力</th><th>位置 / 狀態</th></tr></thead><tbody>';
-  ['liubei','liubiao','zhangxiu','zhangyang','yuanshu','lvbu'].forEach(f=>{
-    const nameMap={liubei:'劉備',liubiao:'劉表',zhangxiu:'張繡',zhangyang:'張揚',yuanshu:'袁術',lvbu:'呂布'};
-    html+=`<tr><td>${nameMap[f]}</td><td>${diploLoc[f]||'（不在場上）'}</td></tr>`;
-  });
+  /* ── 當前狀態（可調整） ── */
+  html+='<h3>當前狀態（可調整）</h3>';
+  html+='<table><thead><tr><th>項目</th><th>當前值</th><th>操作</th></tr></thead><tbody>';
+  html+=`<tr>
+    <td>回合</td><td>第 ${currentRound} 回合</td>
+    <td><button class="dbg-btn" onclick="dbgSetRound(${currentRound-1})" ${currentRound<=1?'disabled':''}>◀</button>
+        <button class="dbg-btn" onclick="dbgSetRound(${currentRound+1})" ${currentRound>=6?'disabled':''}>▶</button></td>
+  </tr>`;
+  html+=`<tr>
+    <td>當前回合方</td><td>${turn}</td>
+    <td><button class="dbg-btn ${isCaoCaoTurn?'active':''}" onclick="dbgSetTurn(true)">曹操方</button>
+        <button class="dbg-btn ${!isCaoCaoTurn?'active':''}" onclick="dbgSetTurn(false)">反曹方</button></td>
+  </tr>`;
+  html+=`<tr>
+    <td>漢獻帝</td><td>${empFlipped?'背面（已用）':'正面（可用）'}</td>
+    <td><button class="dbg-btn ${!empFlipped?'active':''}" onclick="dbgSetEmperor(false)">正面</button>
+        <button class="dbg-btn ${empFlipped?'active':''}" onclick="dbgSetEmperor(true)">背面</button></td>
+  </tr>`;
+  html+=`<tr>
+    <td>狀態索引</td><td>${stateIndex} / ${stateSequence.length-1}（點數 ${stateSequence[stateIndex].num}）</td>
+    <td><button class="dbg-btn" onclick="stepRoundState(-1)">◀</button>
+        <button class="dbg-btn" onclick="stepRoundState(1)">▶</button></td>
+  </tr>`;
+  html+=`<tr><td>反曹棋子數</td><td colspan="2">${antiCount} / ${CONFIG.maxAntiCao}</td></tr>`;
+  html+=`<tr><td>聯曹棋子數</td><td colspan="2">${lianCount}</td></tr>`;
+  html+=`<tr><td>中立棋子數</td><td colspan="2">${zhongCount}</td></tr>`;
+  html+=`<tr><td>已淘汰勢力</td><td colspan="2">${fallenFactions.size===0?'無':Array.from(fallenFactions).join('、')}</td></tr>`;
   html+='</tbody></table>';
 
-  html+='<h3>謀士狀態</h3>';
-  html+='<div class="kv">'+stratLines.map(l=>{const [n,s]=l.split(': ');return `<div class="k">${n}</div><div class="v">${s}</div>`;}).join('')+'</div>';
+  /* ── 立場棋位置（可編輯） ── */
+  html+='<h3>立場棋位置（可調整）</h3>';
+  html+='<table><thead><tr><th>勢力</th><th>位置</th><th>狀態</th></tr></thead><tbody>';
+  const nameMap = {liubei:'劉備',liubiao:'劉表',zhangxiu:'張繡',zhangyang:'張揚',yuanshu:'袁術',lvbu:'呂布'};
+  ['liubei','liubiao','zhangxiu','zhangyang','yuanshu','lvbu'].forEach(f=>{
+    const info = factionAreas[f] || { area:'unknown', flipped:false };
+    const opts = [
+      { v:'content-liancao', label:'聯曹' },
+      { v:'content-zhongli', label:'中立' },
+      { v:'content-fancao',  label:'反曹' },
+      { v:'eliminated',      label:'淘汰' }
+    ].map(o => `<option value="${o.v}" ${info.area===o.v?'selected':''}>${o.label}</option>`).join('');
+    html+=`<tr>
+      <td>${nameMap[f]}</td>
+      <td><select onchange="dbgMovePieceTo('${f}', this.value)">${opts}</select></td>
+      <td><button class="dbg-btn ${info.flipped?'active':''}" onclick="dbgFlipPiece('${f}')">${info.flipped?'背面':'正面'}</button></td>
+    </tr>`;
+  });
+  html+='</tbody></table>';
+  html+='<p style="font-size:11px;color:#888;">💡 下拉選單可將立場棋移至對應欄位（自動檢查上限）；「正面／背面」按鈕切換立場棋狀態。</p>';
 
+  /* ── 謀士狀態（可編輯） ── */
+  html+='<h3>謀士狀態（可調整）</h3>';
+  html+='<table><thead><tr><th>謀士</th><th>狀態</th><th>位置</th></tr></thead><tbody>';
+  if(strategistInfo.length === 0){
+    html+='<tr><td colspan="3" style="color:#888;">（無謀士資料）</td></tr>';
+  } else {
+    strategistInfo.forEach(s => {
+      html+=`<tr>
+        <td>${s.name}</td>
+        <td><button class="dbg-btn ${s.flipped?'active':''}" onclick="dbgFlipStrategistByName('${s.name}')">${s.flipped?'背面（已用）':'正面（可用）'}</button></td>
+        <td>${s.location}</td>
+      </tr>`;
+    });
+  }
+  html+='</tbody></table>';
+
+  /* ── 待命部隊 / 部隊位置（read-only） ── */
   html+='<h3>待命部隊 / 部隊位置</h3><table><thead><tr><th>ID</th><th>名稱</th><th>勢力</th><th>HP</th><th>位置</th></tr></thead><tbody>';
   Object.keys(troopConfig).forEach(id=>{
     const st=troopState[id];
@@ -6426,6 +6037,7 @@ html+='<p style="font-size:11px;color:#888;line-height:1.6;margin:4px 0 10px 4px
   });
   html+='</tbody></table>';
 
+  /* ── 除錯操作 ── */
   html+='<h3>除錯操作</h3><div class="btn-row">';
   html+='<button class="dbg-btn" onclick="dbgRecalcVP()">重新計算資源點</button>';
   html+='<button class="dbg-btn" onclick="dbgRelayout()">重新排版所有部隊</button>';
@@ -6436,6 +6048,77 @@ html+='<p style="font-size:11px;color:#888;line-height:1.6;margin:4px 0 10px 4px
   html+='</div>';
 
   el.innerHTML=html;
+}
+/* ── Debug setters used by the new settings panel ── */
+function dbgSetRound(n){
+  n = Math.max(1, Math.min(6, parseInt(n) || 1));
+  if(n === currentRound) return;
+  currentRound = n;
+  updateIndicator();
+  renderSettings();
+  scheduleAutoSave();
+}
+function dbgSetTurn(isCao){
+  isCaoCaoTurn = !!isCao;
+  applyTurnVisual();
+  updateIndicator();
+  renderSettings();
+  scheduleAutoSave();
+}
+function dbgSetEmperor(flipped){
+  const emp = document.getElementById('emperor-piece');
+  if(!emp) return;
+  emp.classList.toggle('flipped', !!flipped);
+  renderSettings();
+  scheduleAutoSave();
+}
+function dbgMovePieceTo(faction, areaId){
+  const p = document.querySelector('.chess-piece.piece-' + faction);
+  if(!p) return;
+  if(areaId === 'eliminated'){
+    document.getElementById('eliminated-content').appendChild(p);
+  } else {
+    const content = document.getElementById(areaId);
+    if(!content) return;
+    const area = content.querySelector('.piece-area');
+    if(!area) return;
+    if(area !== p.parentElement && area.children.length >= 4){
+      alert('該欄位已滿（上限 4）');
+      renderSettings();
+      return;
+    }
+    if(areaId === 'content-fancao' && area !== p.parentElement){
+      const cur = document.querySelectorAll('#content-fancao .chess-piece').length;
+      if(cur >= CONFIG.maxAntiCao){
+        alert('反曹區已達上限（' + CONFIG.maxAntiCao + '）');
+        renderSettings();
+        return;
+      }
+    }
+    area.appendChild(p);
+  }
+  updateDiploHeights();
+  recalcVP();
+  renderSettings();
+  scheduleAutoSave();
+}
+function dbgFlipPiece(faction){
+  const p = document.querySelector('.chess-piece.piece-' + faction);
+  if(!p) return;
+  p.classList.toggle('flipped');
+  renderSettings();
+  scheduleAutoSave();
+}
+function dbgFlipStrategistByName(name){
+  let target = null;
+  document.querySelectorAll('.strategist-piece').forEach(sp => {
+    if(sp.id === 'emperor-piece') return;
+    if(getStrategistName(sp) === name) target = sp;
+  });
+  if(!target) return;
+  target.classList.toggle('flipped');
+  renderSettings();
+  scheduleAutoSave();
 }
 function dbgRecalcVP(){recalcVP();renderSettings();}
 function dbgRelayout(){['region-henei','region-yingchuan','region-chenliu','region-nanyang','region-runan','region-xiangyang','region-anfeng','region-jiyin','region-langya','region-xiapi','region-huainan','region-qiao','region-pei'].forEach(layoutRegion);renderSettings();}
@@ -7335,8 +7018,18 @@ function refreshRoundBarClone(){
 window.onload=()=>{
   // Apply default scale FIRST (100% = internal zoom 0.7)
   setScale(1.0);
-  // ★ Restore phone-mode preference from localStorage (default OFF)
-  if (typeof applyPhoneMode === 'function') applyPhoneMode();
+  // ★ Auto-detect phone/tablet and set a compact scale ONCE per browser.
+  //   Because the flag is stored in localStorage, pressing 重置 (or 再來一局)
+  //   will not re-apply this — the player's manual scale choice survives.
+  (function autoDetectMobileScale(){
+    try{
+      if(localStorage.getItem('caowei_autoScaleApplied') === '1') return;
+      const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+                    || (window.innerWidth <= 820 && 'ontouchstart' in window);
+      if(isMobile) setScale(0.55);
+      localStorage.setItem('caowei_autoScaleApplied', '1');
+    }catch(e){}
+  })();
   if(typeof updateSemiRandomUI === 'function') updateSemiRandomUI();
   if(typeof updateAIPauseButton === 'function') updateAIPauseButton();
   captureDiploHTML();
