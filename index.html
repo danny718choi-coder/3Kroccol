@@ -870,6 +870,382 @@ body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background-color:var
 }
 .scale-nudge-btn:hover{background:#444;border-color:var(--gold-color)}
 .scale-nudge-btn:active{background:#222}
+/* ══════════════════════════════════════════════════════════════════
+   ★ PHONE MODE — compact LANDSCAPE layout
+   Left column (vertical):  dice → turn+VP → available troops → strategists
+   Middle:                   map
+   Right column (vertical):  round row → diplo columns (聯曹/中立/反曹)
+   Bottom:                   title + settings
+   Bottom-most:              external + eliminated pools
+   ══════════════════════════════════════════════════════════════════ */
+body.phone-mode{
+  padding: 0;
+  margin: 0;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  display: block;
+  --dice-size: 56px;
+  --btn-size: 56px;
+  --box-size: 60px;
+  --indicator-size: 60px;
+  --indicator-inner: 40px;
+}
+
+body.phone-mode .game-board{
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr) 200px;
+  grid-template-rows: auto auto 1fr auto auto auto;
+  grid-template-areas:
+    "dice   map   rounds"
+    "ind    map   rounds"
+    "avail  map   diplo"
+    "strat  map   diplo"
+    "title  title title"
+    "ext    ext   elim";
+  width: 100%;      /* JS overrides to viewport / zoom */
+  height: 100%;     /* JS overrides to viewport / zoom */
+  max-width: none;
+  padding: 4px;
+  box-sizing: border-box;
+  gap: 4px;
+  overflow: hidden;
+}
+
+/* Flatten wrappers so their children become direct grid items */
+body.phone-mode .status-row,
+body.phone-mode .bottom-controls-row,
+body.phone-mode .map-and-diplo{ display: contents; }
+
+body.phone-mode .dice-section       { grid-area: dice;   min-width:0; min-height:0; }
+body.phone-mode .left-status-group  { grid-area: ind;    min-width:0; min-height:0; }
+body.phone-mode .available-pool     { grid-area: avail;  min-width:0; min-height:0; margin:0; }
+body.phone-mode .strategist-section { grid-area: strat;  min-width:0; min-height:0; margin:0; }
+body.phone-mode .map-box            { grid-area: map;    min-width:0; min-height:0; align-self:start; justify-self:start; }
+body.phone-mode .rounds-group       { grid-area: rounds; min-width:0; min-height:0; }
+body.phone-mode .diplo-column       { grid-area: diplo;  min-width:0; min-height:0; }
+body.phone-mode .top-row            { grid-area: title;  min-width:0; min-height:auto !important; margin:0 !important; }
+body.phone-mode .external-pool      { grid-area: ext;    min-width:0; min-height:0; margin:0; }
+body.phone-mode .eliminated-pool    { grid-area: elim;   min-width:0; min-height:0; margin:0; }
+body.phone-mode .rule-text          { display: none; }
+
+/* ──────────── LEFT COLUMN — DICE ──────────── */
+body.phone-mode .dice-section{
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: stretch;
+  padding: 3px;
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+}
+body.phone-mode .semirandom-widget{
+  width: 100%;
+  height: auto;
+  margin: 0;
+  gap: 2px;
+  flex-direction: row;
+}
+body.phone-mode .semirandom-btn,
+body.phone-mode .semirandom-enable-btn{
+  height: 24px;
+  font-size: 10px;
+  border-width: 2px;
+  border-radius: 5px;
+  padding: 0 2px;
+  flex: 1 1 auto;
+}
+body.phone-mode .semirandom-emoji{ font-size: 11px; }
+body.phone-mode .semirandom-text{ font-size: 10px; }
+body.phone-mode .semirandom-enable-btn{ font-size: 11px; }
+
+body.phone-mode .dice-group{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  justify-items: center;
+}
+body.phone-mode .dice-dots{ padding: 6px; }
+body.phone-mode .dot{ width: 10px; height: 10px; }
+
+body.phone-mode .roll-btn{
+  width: 100% !important;
+  height: 28px !important;
+  font-size: 11px;
+  border-width: 2px;
+  border-radius: 5px;
+}
+body.phone-mode .roll-btn.util-btn{
+  font-size: 10px;
+  line-height: 1.05;
+  padding: 1px;
+}
+
+/* ──────────── LEFT COLUMN — TURN + VP ──────────── */
+body.phone-mode .left-status-group{
+  display: flex;
+  flex-direction: row;
+  gap: 3px;
+  align-items: flex-start;
+  justify-content: center;
+}
+body.phone-mode .box-col{ gap: 2px; }
+body.phone-mode .status-box{
+  width: 60px;
+  height: 60px;
+  border-width: 2px;
+  border-radius: 5px;
+}
+body.phone-mode .turn-middle{ width: 52px; height: 52px; border-radius: 4px; }
+body.phone-mode .turn-inner{ width: 36px; height: 36px; border-radius: 3px; }
+body.phone-mode .turn-inner span{ font-size: 13px; }
+body.phone-mode .vp-middle #score-display{ font-size: 20px; padding-bottom: 8px; }
+body.phone-mode .vp-label{ font-size: 9px; bottom: 1px; }
+body.phone-mode .score-box button{ font-size: 12px; }
+body.phone-mode .auto-check{ font-size: 8px; gap: 2px; }
+body.phone-mode .auto-check input{ width: 10px; height: 10px; }
+
+/* ──────────── LEFT COLUMN — AVAILABLE POOL (1fr row) ──────────── */
+body.phone-mode .available-pool{
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 4px;
+  gap: 3px;
+  border-width: 2px;
+  border-radius: 6px;
+  overflow: auto;
+}
+body.phone-mode .available-pool > .pool-label{
+  font-size: 10px;
+  text-align: center;
+}
+body.phone-mode .available-pool > .pool-content{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: center;
+  align-content: flex-start;
+}
+
+/* Shrink pool troops universally in phone mode */
+body.phone-mode .available-pool .troop-wrapper,
+body.phone-mode .external-pool  .troop-wrapper,
+body.phone-mode .eliminated-pool .troop-wrapper{ width: 42px; height: 42px; }
+body.phone-mode .available-pool .troop-piece,
+body.phone-mode .external-pool  .troop-piece,
+body.phone-mode .eliminated-pool .troop-piece{
+  width: 42px; height: 42px;
+  border-width: 2px;
+  border-radius: 5px;
+}
+body.phone-mode .available-pool .troop-inner,
+body.phone-mode .external-pool  .troop-inner,
+body.phone-mode .eliminated-pool .troop-inner{ width: 28px; height: 28px; }
+body.phone-mode .available-pool .troop-name-v,
+body.phone-mode .external-pool  .troop-name-v,
+body.phone-mode .eliminated-pool .troop-name-v{ font-size: 8px; top: 1px; left: 1px; }
+body.phone-mode .available-pool .troop-combat,
+body.phone-mode .external-pool  .troop-combat,
+body.phone-mode .eliminated-pool .troop-combat{ font-size: 14px; right: 2px; }
+body.phone-mode .available-pool .hp-indicator span,
+body.phone-mode .external-pool  .hp-indicator span,
+body.phone-mode .eliminated-pool .hp-indicator span{ width: 4px; height: 4px; }
+
+/* ──────────── LEFT COLUMN — STRATEGISTS ──────────── */
+body.phone-mode .strategist-section{
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  gap: 3px;
+  border-width: 2px;
+  border-radius: 6px;
+  width: auto !important;
+  overflow: hidden;
+}
+body.phone-mode .strategist-section > .pool-label{
+  font-size: 10px;
+  text-align: center;
+}
+body.phone-mode .strategist-row{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: center;
+}
+body.phone-mode .strategist-piece{ width: 42px; height: 42px; }
+body.phone-mode .strategist-inner,
+body.phone-mode .strategist-inner-back{
+  width: 32px; height: 32px;
+  font-size: 10px;
+  padding: 2px;
+  letter-spacing: 1px;
+}
+body.phone-mode .strat-back-bg{ width: 14px; height: 22px; }
+body.phone-mode .strat-back-bg span{ font-size: 9px; }
+
+/* ──────────── CENTER — MAP ──────────── */
+body.phone-mode .map-box{
+  /* JS sets zoom to fit */
+  transform-origin: top left;
+}
+
+/* ──────────── RIGHT COLUMN — ROUNDS ──────────── */
+body.phone-mode .rounds-group{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  align-content: start;
+  justify-content: center;
+}
+body.phone-mode .round-box{
+  width: auto;
+  height: 60px;
+  border-width: 2px;
+  border-radius: 5px;
+}
+body.phone-mode .round-num{ font-size: 22px; }
+body.phone-mode .round-text{ font-size: 8px; bottom: 2px; }
+
+/* ──────────── RIGHT COLUMN — DIPLO ──────────── */
+body.phone-mode .diplo-column{
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+body.phone-mode .diplo-header{
+  height: 22px;
+  font-size: 12px;
+  letter-spacing: 2px;
+  border-radius: 3px;
+}
+body.phone-mode .diplo-content{
+  min-height: 70px;
+  border-width: 2px;
+}
+body.phone-mode .diplo-content.empty{ min-height: 50px; }
+body.phone-mode .diplo-content.has-1-2{ min-height: 70px; }
+body.phone-mode .diplo-content .top-text,
+body.phone-mode .diplo-content .bottom-text{
+  font-size: 8px;
+  padding: 1px;
+}
+body.phone-mode .piece-area{
+  grid-template-columns: repeat(2, 40px);
+  grid-template-rows: repeat(2, 40px);
+  min-height: 80px;
+}
+body.phone-mode .diplo-content.has-1-2 .piece-area{
+  min-height: 40px;
+  grid-template-rows: 40px;
+}
+body.phone-mode .diplo-content.empty .piece-area{ min-height: 0; }
+body.phone-mode .chess-piece{ width: 40px; height: 40px; }
+body.phone-mode .chess-front,
+body.phone-mode .chess-back{
+  padding: 3px;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  border-radius: 4px;
+}
+body.phone-mode .chess-front .dice-icon,
+body.phone-mode .chess-back .dice-icon{
+  width: 14px; height: 14px;
+  padding: 1px;
+  border-width: 1px;
+}
+body.phone-mode .dice-icon .dot{ width: 2px; height: 2px; }
+body.phone-mode .back-text-bg{ width: 14px; height: 22px; }
+body.phone-mode .back-text-bg span{ font-size: 11px; }
+body.phone-mode .emperor-piece{ left: 3px; bottom: 3px; }
+body.phone-mode .emperor-piece .strat-back-bg{ width: 16px; height: 30px; }
+body.phone-mode .emperor-piece .strat-back-bg span{ font-size: 9px; }
+
+/* ──────────── BOTTOM — TITLE + SETTINGS ──────────── */
+body.phone-mode .top-row{
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 6px !important;
+  padding: 4px !important;
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  background: rgba(0,0,0,.25);
+}
+body.phone-mode .game-title{
+  font-size: 18px !important;
+  letter-spacing: 2px !important;
+  margin: 0 !important;
+  white-space: nowrap;
+}
+body.phone-mode .top-settings-buttons{
+  gap: 2px !important;
+  flex-wrap: nowrap !important;
+  justify-content: flex-end !important;
+}
+body.phone-mode .top-settings-buttons .reset-btn,
+body.phone-mode .top-settings-buttons .roll-btn{
+  width: 38px;
+  height: 38px;
+  font-size: 8px;
+  border-width: 2px;
+  border-radius: 5px;
+  padding: 1px;
+  line-height: 1.05;
+  flex-shrink: 0;
+}
+body.phone-mode .top-settings-buttons .roll-btn.util-btn{ font-size: 8px; }
+
+/* ──────────── BOTTOM — OUT-OF-GAME POOLS ──────────── */
+body.phone-mode .external-pool,
+body.phone-mode .eliminated-pool{
+  flex-direction: column;
+  padding: 4px;
+  gap: 3px;
+  border-width: 2px;
+  border-radius: 6px;
+  overflow: auto;
+}
+body.phone-mode .external-pool .pool-label,
+body.phone-mode .eliminated-pool .pool-label{ font-size: 10px; }
+body.phone-mode .external-pool .pool-content,
+body.phone-mode .eliminated-pool .pool-content{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: center;
+  align-content: flex-start;
+}
+body.phone-mode .pool-header{ padding: 0; }
+body.phone-mode .pool-toggle{ font-size: 10px; }
+body.phone-mode .troop-badge{ font-size: 8px; padding: 1px 3px; }
+body.phone-mode .troop-badge.count-1{ font-size: 12px; padding: 2px 5px; }
+body.phone-mode .troop-badge.count-2{ font-size: 9px; padding: 1px 4px; }
+
+/* ──────────── ROUND INDICATOR ──────────── */
+body.phone-mode #round-indicator{
+  width: var(--box-size);
+  height: var(--box-size);
+}
+body.phone-mode .indicator-label{ font-size: 13px; }
+body.phone-mode .ri-hp span{ width: 5px; height: 5px; }
+body.phone-mode .ri-hp.ri-top,
+body.phone-mode .ri-hp.ri-bottom{ gap: 2px; top: 2px; }
+body.phone-mode .ri-hp.ri-right{ gap: 2px; right: 2px; }
+body.phone-mode .ri-hp.ri-bottom{ bottom: 2px; }
+
+/* ──────────── MODALS ──────────── */
+body.phone-mode .modal{ max-width: 96vw; max-height: 92vh; padding: 10px; }
+body.phone-mode .modal-body{ padding: 8px 10px; }
+body.phone-mode .modal h2{ font-size: 14px; }
+body.phone-mode .modal-body .dbg-btn{ padding: 4px 8px; font-size: 10px; }
+body.phone-mode .modal-body table{ font-size: 10px; }
+body.phone-mode .go-inner{ padding: 16px 22px; }
+body.phone-mode .go-inner h2{ font-size: 22px; letter-spacing: 3px; }
+body.phone-mode .go-inner p{ font-size: 12px; }
 </style>
 </head>
 <body>
@@ -2709,6 +3085,89 @@ if(act.type === 'move'){
 
   advanceRoundState();
 }
+/* ══════════════════════════════════════════════════════════════════
+   ★ PHONE MODE — persistent toggle in Settings
+   ══════════════════════════════════════════════════════════════════ */
+let phoneMode = (()=>{
+  try { return localStorage.getItem('caowei_phoneMode') === '1'; }
+  catch(e){ return false; }
+})();
+
+function togglePhoneMode(on){
+  phoneMode = !!on;
+  try { localStorage.setItem('caowei_phoneMode', phoneMode ? '1' : '0'); } catch(e){}
+  applyPhoneMode();
+  if (typeof renderSettings === 'function') renderSettings();
+  if (typeof updateIndicator === 'function') setTimeout(updateIndicator, 120);
+}
+
+function applyPhoneMode(){
+  document.body.classList.toggle('phone-mode', phoneMode);
+
+  const gb = document.getElementById('game-board');
+  if (gb){
+    if (phoneMode){
+      // Force the game-board to fill the viewport after the user's
+      // UI-scale zoom is applied. `currentScale` is the CSS zoom value
+      // set by setScale() — dividing viewport by it gives us the CSS
+      // size that renders to exactly the viewport.
+      const s = (typeof currentScale === 'number' && currentScale > 0) ? currentScale : 0.7;
+      gb.style.width    = (window.innerWidth  / s) + 'px';
+      gb.style.height   = (window.innerHeight / s) + 'px';
+      gb.style.maxWidth = 'none';
+    } else {
+      gb.style.width    = '';
+      gb.style.height   = '';
+      gb.style.maxWidth = '';
+    }
+  }
+
+  // After layout settles: fit the map + re-anchor the round indicator
+  setTimeout(() => {
+    updatePhoneMapZoom();
+    if (typeof updateIndicator === 'function') updateIndicator();
+  }, 80);
+}
+
+/* Fits the 1450×950 map-box into its grid cell in phone mode.
+   Budgets both width and height so the map never overflows the
+   middle column, and reserves space for the top/bottom rows. */
+function updatePhoneMapZoom(){
+  const mapBox = document.querySelector('.map-box');
+  if (!mapBox) return;
+  if (!phoneMode){
+    mapBox.style.zoom = '';
+    return;
+  }
+
+  const s = (typeof currentScale === 'number' && currentScale > 0) ? currentScale : 0.7;
+  const vpW = window.innerWidth  / s;     // game-board CSS width
+  const vpH = window.innerHeight / s;     // game-board CSS height
+
+  // Horizontal reservations (grid columns + gaps + board padding)
+  const leftCol  = 148;
+  const rightCol = 200;
+  const gapX     = 4 * 4;                 // 4px gap × 4 gaps + padding
+  const availW = Math.max(120, vpW - leftCol - rightCol - gapX - 16);
+
+  // Vertical reservations (auto rows above/below the map span)
+  const reservedH =
+      130        // dice block
+    + 70         // turn+VP
+    + 60         // strategists
+    + 60         // title + settings
+    + 70         // external + eliminated pools
+    + 40;        // gaps + padding
+  const availH = Math.max(100, vpH - reservedH);
+
+  const zoom = Math.max(0.05, Math.min(availW / 1450, availH / 950, 1));
+  mapBox.style.zoom = zoom;
+}
+
+/* Re-fit when the viewport changes (only matters in phone mode) */
+window.addEventListener('resize', () => {
+  if (phoneMode) applyPhoneMode();
+});
 /* ==== NEW: base visual scale — internally we zoom 0.7, UI shows 100% ==== */
 const BASE_SCALE = 0.7;
 let displayScale = 1.0;                    // what the user sees (1.0 = 100%)
@@ -2734,6 +3193,8 @@ if(slider){
   setTimeout(()=>{
     updateIndicator();
     ['region-henei','region-yingchuan','region-chenliu','region-nanyang','region-runan','region-xiangyang','region-anfeng','region-jiyin','region-langya','region-xiapi','region-huainan','region-qiao','region-pei'].forEach(layoutRegion);
+    // ★ If phone mode is on, re-fit the game-board size + map zoom
+    if (typeof applyPhoneMode === 'function') applyPhoneMode();
   },80);
 }
 function onScaleSliderInput(v){
@@ -5474,6 +5935,16 @@ html+='<div style="display:flex;justify-content:space-between;font-size:11px;col
 html+='<span>25%</span><span>100%</span><span>200%</span>';
 html+='</div>';
 html+='<div class="scale-indicator" style="text-align:center;margin-top:8px">當前：<b id="scale-display">'+Math.round(displayScale*100)+'%</b></div>';
+
+// ★ NEW: Phone mode toggle
+html+='<h3>顯示模式</h3>';
+html+='<label style="display:flex;align-items:center;gap:8px;color:#fff;font-size:13px;cursor:pointer;user-select:none;margin-bottom:6px;padding:6px 10px;background:rgba(0,0,0,.3);border-radius:6px;">'
+    + '<input type="checkbox" ' + (phoneMode ? 'checked' : '') + ' onchange="togglePhoneMode(this.checked)" '
+    + 'style="width:16px;height:16px;cursor:pointer;accent-color:var(--gold-color)">'
+    + '<span>📱 手機模式（直向螢幕排版）</span>'
+    + '</label>';
+html+='<p style="font-size:11px;color:#888;line-height:1.6;margin:4px 0 10px 4px;">開啟後：地圖與外交欄改成上下堆疊、士兵與骰子縮小、回合盒自動換行——整體版面變成適合手機直向握持的長條形。</p>';
+
 	html+='<h3>除錯顯示</h3>';
 	html+='<div class="btn-row">';
 	html+='<label style="display:flex;align-items:center;gap:8px;color:#fff;font-size:13px;cursor:pointer;user-select:none">'
@@ -6227,6 +6698,8 @@ document.addEventListener('click', function(e){
 window.onload=()=>{
   // Apply default scale FIRST (100% = internal zoom 0.7)
   setScale(1.0);
+  // ★ Restore phone-mode preference from localStorage (default OFF)
+  if (typeof applyPhoneMode === 'function') applyPhoneMode();
   if(typeof updateSemiRandomUI === 'function') updateSemiRandomUI();
   if(typeof updateAIPauseButton === 'function') updateAIPauseButton();
   captureDiploHTML();
