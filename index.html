@@ -9,7 +9,7 @@
 :root{
   --cao-color:#3385ff;--cao-light-color:#99ddff;--anti-cao-color:#ff471a;--anti-cao-light-color:#e4a89b;
   --bg-color:#404040;--province-bg:#cdd9a8;--border-color:#374151;
-  --dice-size:110px;--btn-size:110px;--box-size:120px;--indicator-size:110px;--indicator-inner:75px;
+  --dice-size:110px;--btn-size:110px;--box-size:120px;--indicator-size:110px;--indicator-inner:79px;
   --gold-color:#FFD700;--header-blue:#2563eb;--header-red:#dc2626;--header-black:#000;
   --piece-zhangxiu:#ff471a;--piece-liubei:#008000;--piece-liubiao:#4d0099;--piece-zhangyang:#cea67e;--piece-yuanshu:#ffb84d;--piece-lvbu:#4d4d4d;
   --plain-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cellipse cx='50' cy='160' rx='70' ry='28' fill='%23a8c080' fill-opacity='0.28'/%3E%3Cellipse cx='150' cy='80' rx='80' ry='32' fill='%23b0c888' fill-opacity='0.22'/%3E%3Cellipse cx='100' cy='190' rx='55' ry='22' fill='%23a0b878' fill-opacity='0.25'/%3E%3C/svg%3E");
@@ -17,11 +17,13 @@
   --hills-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cellipse cx='40' cy='150' rx='65' ry='38' fill='%238aaa60' fill-opacity='0.55'/%3E%3Cellipse cx='130' cy='160' rx='75' ry='42' fill='%237a9a50' fill-opacity='0.5'/%3E%3Cellipse cx='90' cy='100' rx='55' ry='30' fill='%239aba70' fill-opacity='0.42'/%3E%3Cellipse cx='170' cy='70' rx='40' ry='22' fill='%2388a858' fill-opacity='0.45'/%3E%3Cpath d='M20 140 L55 70 L90 140 Z' fill='%237a9a55' fill-opacity='0.38'/%3E%3Cpath d='M95 155 L135 85 L175 155 Z' fill='%235a7a35' fill-opacity='0.34'/%3E%3Cpath d='M-10 90 L20 40 L50 90 Z' fill='%236a8a45' fill-opacity='0.3'/%3E%3C/svg%3E");
   --hills-sparse: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280'%3E%3Cellipse cx='70' cy='220' rx='72' ry='38' fill='%238aaa60' fill-opacity='0.4'/%3E%3Cellipse cx='200' cy='235' rx='78' ry='42' fill='%237a9a50' fill-opacity='0.34'/%3E%3Cellipse cx='150' cy='120' rx='55' ry='26' fill='%239aba70' fill-opacity='0.24'/%3E%3Cpath d='M40 240 L90 150 L140 240 Z' fill='%237a9a55' fill-opacity='0.28'/%3E%3Cpath d='M170 260 L215 170 L260 260 Z' fill='%235a7a35' fill-opacity='0.24'/%3E%3C/svg%3E");
 }
-/* ★ NEW: VP indicator danger colors */
-#score-display.vp-danger-mild {
+/* ★ NEW: VP indicator danger colors
+   Class-only (no #score-display prefix) so the bar's clone also picks them up.
+   Only the VP number ever receives these classes, so there's no collision risk. */
+.vp-danger-mild {
   color: #ef4444 !important;
 }
-#score-display.vp-danger-extreme {
+.vp-danger-extreme {
   color: #dc2626 !important;
   animation: vpExtremePulse 1.2s ease-in-out infinite;
 }
@@ -385,8 +387,8 @@ body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background-color:var
    together as one unit, and flips on round change. */
 #round-indicator{
   position:absolute;
-  width:var(--box-size);            /* ← was --indicator-size (110px) */
-  height:var(--box-size);           /* ← matches round-box exactly  */
+  width:var(--indicator-size);      /* 110px — matches a troop */
+  height:var(--indicator-size);
   cursor:pointer;
   z-index:20;
   user-select:none;
@@ -427,9 +429,11 @@ body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background-color:var
   box-sizing:border-box;
   background-color:var(--cao-color);   /* default; overridden below */
 }
-/* ★ Back face counter-rotates so its rotation reads the same on screen */
+/* ★ Back face rotates in the SAME direction as the front.
+   Two nested rotateY(180°) transforms cancel out, so no counter-rotation
+   is needed — adding one flips the visual direction on even rounds. */
 .ri-side.ri-back .ri-rot-layer{
-  transform:rotate(calc(-1 * var(--ri-rot,0deg)));
+  transform:rotate(var(--ri-rot,0deg));
 }
 /* ★ Corner dot — makes rotation AND flip visibly obvious (dot travels corners) */
 .ri-rot-layer::before{
@@ -450,8 +454,6 @@ body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background-color:var
 /* ★ R/B ALTERNATION ON FLIP:
      front face = semantic colour; back face = OPPOSITE colour.
      So every flip visibly swaps Blue ↔ Red. */
-#round-indicator.cao      .ri-side.ri-back .ri-rot-layer{ background-color:var(--anti-cao-color); }
-#round-indicator.anti-cao .ri-side.ri-back .ri-rot-layer{ background-color:var(--cao-color); }
 
 /* Inner light square — moves with the rot layer */
 .ri-inner-square{
@@ -1179,6 +1181,227 @@ body.phone-mode .eliminated-pool .pool-content{
   justify-content: center; align-content: flex-start;
   max-height: 50px; overflow-y: auto;
 }
+/* ══════════════════════════════════════════════════════════════════
+   ★ Round-bar toggle — sits right of round 6, same height as a
+   round box, ~1/3 the width. Gold border matches the round strip.
+   ══════════════════════════════════════════════════════════════════ */
+.round-bar-toggle-btn{
+  flex:none;
+  width:calc(var(--box-size) / 3);       /* 120 / 3 = 40px */
+  height:var(--box-size);                /* matches .round-box */
+  align-self:center;
+  box-sizing:border-box;
+  padding:4px 0;
+  background:#1a1a1a;
+  border:3px solid var(--gold-color);
+  border-radius:8px;
+  color:var(--gold-color);
+  font-family:inherit;
+  font-weight:bold;
+  font-size:13px;
+  line-height:1.15;
+  cursor:pointer;
+  white-space:normal;
+  writing-mode:vertical-rl;              /* stack characters vertically */
+  text-orientation:upright;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  transition:background .15s,color .15s,box-shadow .15s;
+}
+.round-bar-toggle-btn:hover{ background:#262626; box-shadow:0 4px 10px rgba(255,215,0,.2); }
+.round-bar-toggle-btn.active{
+  background:linear-gradient(180deg,#c8a040,#8a6020);
+  color:#fff;
+  border-color:#ffd700;
+  box-shadow:0 0 14px rgba(255,215,0,.5);
+}
+
+/* ── The pop-out panel ────────────────────────────────────────────── */
+#round-bar{
+  position:fixed;
+  right:10px;
+  top:50%;
+  transform:translateY(-50%);
+  z-index:9998;
+  display:none;
+  flex-direction:column;
+  gap:6px;
+  align-items:center;
+  padding:8px;
+  background:rgba(0,0,0,.62);
+  border:2px solid var(--gold-color);
+  border-radius:10px;
+  max-height:calc(100vh - 20px);
+  overflow-y:auto;
+  box-shadow:0 6px 20px rgba(0,0,0,.6);
+}
+/* ── Turn / VP / auto-check panel — moved into the bar ── */
+#round-bar .left-status-group{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  align-items:center;
+  width:100%;
+}
+#round-bar .left-status-group .box-col{
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+}
+#round-bar .left-status-group .status-box{
+  width:62px; height:62px;
+  border-width:2px; border-radius:5px;
+}
+#round-bar .left-status-group .turn-middle{ width:57px; height:57px; border-radius:4px; }
+#round-bar .left-status-group .turn-inner { width:39px; height:39px; border-radius:3px; }
+#round-bar .left-status-group .turn-inner span{ font-size:14px; }
+#round-bar .left-status-group .vp-middle #score-display{ font-size:22px; padding-bottom:8px; }
+#round-bar .left-status-group .vp-label{ font-size:9px; bottom:2px; }
+#round-bar .left-status-group .score-box button{ font-size:14px; width:16px; }
+#round-bar .left-status-group .score-box{ grid-template-columns:16px 1fr 16px; }
+#round-bar .left-status-group .auto-check{ font-size:9px; gap:3px; }
+#round-bar .left-status-group .auto-check input{ width:11px; height:11px; }
+#round-bar.show{ display:flex; }
+#round-bar::-webkit-scrollbar{ width:6px; }
+#round-bar::-webkit-scrollbar-thumb{ background:#555; border-radius:3px; }
+
+#round-bar .round-box{
+  width:62px;
+  height:62px;
+  flex-shrink:0;
+  border-width:2px;
+  border-radius:6px;
+}
+#round-bar .round-num{ font-size:22px; top:38%; }
+#round-bar .round-text{ font-size:9px; bottom:3px; }
+
+#round-bar .round-bar-recovery{
+  position:absolute;
+  top:2px; left:2px; right:2px;
+  display:flex; flex-wrap:wrap; gap:1px;
+  justify-content:center;
+  z-index:5;
+  pointer-events:none;
+}
+#round-bar .troop-badge{
+  font-size:7px; padding:0 2px; border-radius:2px; border-width:1px;
+}
+#round-bar .troop-badge.count-1{ font-size:10px; padding:1px 3px; }
+#round-bar .troop-badge.count-2{ font-size:8px;  padding:0 2px; }
+
+/* Mini round-indicator (rotated/flipped copy) */
+#round-bar .round-bar-indicator{
+  position:relative;
+  width:62px; height:62px;
+  flex-shrink:0;
+  perspective:1000px;
+  box-sizing:border-box;
+}
+#round-bar .round-bar-indicator .ri-3d{
+  width:100%; height:100%;
+  position:relative;
+  transform-style:preserve-3d;
+  transition:transform .55s ease;
+}
+#round-bar .round-bar-indicator.flipped .ri-3d{ transform:rotateY(180deg); }
+#round-bar .round-bar-indicator .ri-side{
+  position:absolute; inset:0;
+  backface-visibility:hidden;
+  box-sizing:border-box;
+  border-radius:5px;
+  box-shadow:0 3px 6px rgba(0,0,0,.4);
+}
+#round-bar .round-bar-indicator .ri-side.ri-back{ transform:rotateY(180deg); }
+#round-bar .round-bar-indicator .ri-rot-layer{
+  position:absolute; inset:0;
+  transform:rotate(var(--ri-rot,0deg));
+  transition:transform .5s ease, background-color .3s;
+  display:flex; justify-content:center; align-items:center;
+  border:2px solid var(--border-color);
+  border-radius:5px;
+  box-sizing:border-box;
+  background-color:var(--cao-color);
+}
+#round-bar .round-bar-indicator.anti-cao .ri-rot-layer{ background-color:var(--anti-cao-color); }
+#round-bar .round-bar-indicator .ri-side.ri-back .ri-rot-layer{
+  transform:rotate(var(--ri-rot,0deg));
+}
+#round-bar .round-bar-indicator .ri-rot-layer::before{
+  content:'';
+  position:absolute;
+  top:5px; right:5px;
+  width:8px; height:8px;
+  background:rgba(255,255,255,.78);
+  border-radius:50%;
+  box-shadow:0 0 3px rgba(0,0,0,.55);
+  pointer-events:none;
+  z-index:5;
+}
+#round-bar .round-bar-indicator .ri-inner-square{
+  position:absolute;
+  top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  width:41px; height:41px;      /* ★ was 38 — matches troop's 79/110 ratio */
+  background-color:var(--cao-light-color);
+  border-radius:2px;             /* ★ was 3 — matches troop's 4/110 ratio */
+  transition:background-color .3s;
+}
+#round-bar .round-bar-indicator.anti-cao .ri-inner-square{
+  background-color:var(--anti-cao-light-color);
+}
+#round-bar .round-bar-indicator .indicator-label{
+  color:black;
+  font-size:12px;                /* ★ was 16 — matches troop's 20/110 ratio */
+  font-weight:bold;
+  line-height:1;
+  position:relative;
+  z-index:2;
+}
+
+/* Phone mode: hide the toggle button with the rest of .status-row */
+body.phone-mode .round-bar-toggle-btn{ display:none !important; }
+body.phone-mode #round-bar{ display:none !important; }
+/* Grid: single column. Indicator overlays whichever round box
+   shares its grid-row. */
+#round-bar .rb-rounds{
+  display: grid;
+  grid-template-columns: 62px;
+  gap: 6px;
+  align-items: center;
+  justify-items: center;
+}
+#round-bar .rb-rounds .round-box{
+  grid-column: 1;
+}
+#round-bar .rb-rounds .round-bar-indicator{
+  grid-column: 1;              /* same column → overlaps */
+  width: 57px; height: 57px;   /* ★ 62 × 11/12 — matches top-row ratio */
+  justify-self: center;
+  align-self: center;
+  z-index: 10;                 /* paint on top of the round box */
+  cursor: pointer;
+}
+
+/* Tiny HP squares inside the bar's mini indicator */
+#round-bar .round-bar-indicator .ri-hp{
+  position:absolute;display:flex;z-index:3;
+}
+#round-bar .round-bar-indicator .ri-hp span{
+  display:block;width:4px;height:4px;
+  background-color:#fff;border-radius:1px;
+  box-shadow:0 0 1px rgba(0,0,0,.45);
+}
+#round-bar .round-bar-indicator .ri-hp.ri-top{
+  top:2px;left:50%;transform:translateX(-50%);
+  flex-direction:row;gap:3px;
+}
+#round-bar .round-bar-indicator .ri-hp.ri-right{
+  right:2px;top:50%;transform:translateY(-50%);
+  flex-direction:column;gap:3px;
+}
+#round-bar .round-bar-indicator .ri-hp.ri-bottom{
+  bottom:2px;left:50%;transform:translateX(-50%);
+  flex-direction:row;gap:3px;
+}
 </style>
 </head>
 <body>
@@ -1228,6 +1451,9 @@ body.phone-mode .eliminated-pool .pool-content{
 <div class="status-box round-box" id="round-4"><span class="round-num">四</span><span class="round-text">197年 冬</span><div class="recovery-area" data-round="4"></div></div>
 <div class="status-box round-box" id="round-5"><span class="round-num">五</span><span class="round-text">198年 春</span><div class="recovery-area" data-round="5"></div></div>
 <div class="status-box round-box" id="round-6"><span class="round-num">六</span><span class="round-text">198年 夏</span><div class="recovery-area" data-round="6"></div></div>
+  <button class="round-bar-toggle-btn" id="round-bar-btn"
+          onclick="toggleRoundBar()"
+          title="展開 / 收起右側回合列">回合列 ▶</button>
 </div>
 
 <div class="rule-text" id="rule-text" onclick="toggleRuleText()">
@@ -1245,7 +1471,7 @@ body.phone-mode .eliminated-pool .pool-content{
     <div>1. 抗曹判定：需要曹操方資源點 ≥ 6</div>
     <div>2. 行動步驟：雙方輪流行動三次，每次可選擇拉攏、出征或徵召其中一種。</div>
     <div>3. 結束步驟：謀士棋、立場棋及獻帝翻回正面，曹操方資源點 ≤ 6 則下回合反曹方先手，否則曹操方先手。</div>
-  </div>
+  </div>  
 </div>
 
 
@@ -6738,6 +6964,299 @@ document.addEventListener('click', function(e){
     });
     return r;
   };
+})();
+/* ══════════════════════════════════════════════════════════════════
+   ★ Right-side round bar — mirrors #rounds-group + #round-indicator
+   into a vertical strip. Toggled by the button next to round 6.
+   ══════════════════════════════════════════════════════════════════ */
+let roundBarVisible = false;
+let _roundBarEl = null;
+let _roundBarObserver = null;
+let _roundBarSyncTimer = null;
+
+function ensureRoundBar(){
+  if(_roundBarEl && _roundBarEl.isConnected) return _roundBarEl;
+
+  _roundBarEl = document.createElement('div');
+  _roundBarEl.id = 'round-bar';
+  document.body.appendChild(_roundBarEl);
+
+  if(!_roundBarObserver){
+    _roundBarObserver = new MutationObserver(() => {
+      if(!roundBarVisible) return;
+      if(_roundBarSyncTimer) clearTimeout(_roundBarSyncTimer);
+      _roundBarSyncTimer = setTimeout(() => {
+        _roundBarSyncTimer = null;
+        syncRoundBar();
+      }, 50);
+    });
+  }
+  const rg = document.getElementById('rounds-group');
+  const ri = document.getElementById('round-indicator');
+  if(rg) _roundBarObserver.observe(rg, {
+    childList:true, subtree:true, attributes:true, characterData:true
+  });
+  if(ri) _roundBarObserver.observe(ri, {
+    attributes:true, attributeFilter:['class','style']
+  });
+  return _roundBarEl;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Round-bar — built ONCE when opened, then synced in place.
+   ══════════════════════════════════════════════════════════════════ */
+
+function toggleRoundBar(){
+  ensureRoundBar();
+  roundBarVisible = !roundBarVisible;
+  _roundBarEl.classList.toggle('show', roundBarVisible);
+
+  const btn = document.getElementById('round-bar-btn');
+  if(btn){
+    btn.classList.toggle('active', roundBarVisible);
+    btn.textContent = roundBarVisible ? '回合列 ◀' : '回合列 ▶';
+  }
+
+  if(roundBarVisible){
+    buildRoundBar();
+    syncRoundBar();
+  }
+}
+
+/* Build the bar's DOM once. Subsequent updates go through syncRoundBar. */
+function buildRoundBar(){
+  _roundBarEl.innerHTML = '';
+
+  /* ── 1. Clone of the turn/VP/auto-check panel ── */
+  const lsg = document.querySelector('.left-status-group');
+  if(lsg){
+    const clone = lsg.cloneNode(true);
+    clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+
+    /* Re-wire handlers on the clone (they point at the SAME functions
+       the original uses, so behaviour is identical and both sides update). */
+    const cloneTurn = clone.querySelector('.turn-box');
+    if(cloneTurn) cloneTurn.onclick = () => toggleTurn();
+
+    const b = clone.querySelectorAll('.score-box button');
+    if(b[0]) b[0].onclick = () => changeScore(-1);
+    if(b[1]) b[1].onclick = () => changeScore( 1);
+
+    const c = clone.querySelectorAll('.auto-check input');
+    if(c[0]) c[0].onchange = (e) => {
+      const o = document.getElementById('auto-turn');
+      if(o){ o.checked = e.target.checked; o.dispatchEvent(new Event('change')); }
+    };
+    if(c[1]) c[1].onchange = (e) => {
+      const o = document.getElementById('auto-vp');
+      if(o){ o.checked = e.target.checked; o.dispatchEvent(new Event('change')); }
+    };
+
+    _roundBarEl.appendChild(clone);
+  }
+
+  /* ── 2. Rounds grid: indicator (col 1) + round boxes (col 2) ── */
+  const wrap = document.createElement('div');
+  wrap.className = 'rb-rounds';
+
+  const ind = document.createElement('div');
+  ind.className = 'round-bar-indicator';
+  ind.title = '點左半前進一格 / 點右半後退一格';
+  ind.innerHTML =
+    '<div class="ri-3d">'
+    +  '<div class="ri-side ri-front"><div class="ri-rot-layer">'
+    +    '<div class="ri-inner-square"></div>'
+    +    '<div class="ri-hp ri-top"><span></span><span></span><span></span></div>'
+    +    '<div class="ri-hp ri-right"><span></span><span></span></div>'
+    +    '<div class="ri-hp ri-bottom"><span></span></div>'
+    +    '<span class="indicator-label">回合</span>'
+    +  '</div></div>'
+    +  '<div class="ri-side ri-back"><div class="ri-rot-layer">'
+    +    '<div class="ri-inner-square"></div>'
+    +    '<div class="ri-hp ri-top"><span></span><span></span><span></span></div>'
+    +    '<div class="ri-hp ri-right"><span></span><span></span></div>'
+    +    '<div class="ri-hp ri-bottom"><span></span></div>'
+    +    '<span class="indicator-label">回合</span>'
+    +  '</div></div>'
+    + '</div>';
+  ind.onclick = (e) => {
+    const rect = ind.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    if (x < rect.width / 2) stepRoundState(-1);
+    else                    stepRoundState( 1);
+  };
+  wrap.appendChild(ind);
+
+  let rowIdx = 1;
+  document.querySelectorAll('#rounds-group .round-box').forEach(box => {
+    const copy = document.createElement('div');
+    copy.className = 'status-box round-box';
+    copy.style.gridRow = String(rowIdx);        /* ★ lock to its own row */
+    const numEl  = box.querySelector('.round-num');
+    const yearEl = box.querySelector('.round-text');
+    copy.innerHTML =
+      '<span class="round-num">' + (numEl  ? numEl.textContent  : '') + '</span>'
+      + '<span class="round-text">' + (yearEl ? yearEl.textContent : '') + '</span>'
+      + '<div class="round-bar-recovery"></div>';
+    wrap.appendChild(copy);
+    rowIdx++;
+  });
+
+  _roundBarEl.appendChild(wrap);
+}
+
+/* Sync the bar's DOM with the current live state. Cheap in-place updates. */
+function syncRoundBar(){
+  if(!roundBarVisible || !_roundBarEl) return;
+  if(!_roundBarEl.firstChild){ buildRoundBar(); }
+
+  /* Indicator: copy class + --ri-rot from the live #round-indicator */
+  const src = document.getElementById('round-indicator');
+  const dst = _roundBarEl.querySelector('.round-bar-indicator');
+  if(src && dst){
+    dst.classList.toggle('cao',      src.classList.contains('cao'));
+    dst.classList.toggle('anti-cao', src.classList.contains('anti-cao'));
+    dst.classList.toggle('flipped',  src.classList.contains('flipped'));
+    const rot = src.style.getPropertyValue('--ri-rot') || '0deg';
+    dst.style.setProperty('--ri-rot', rot);
+
+    /* ★ Snap the mini indicator to the row of the current round. */
+    dst.style.gridRow = String(currentRound);
+  }
+
+  /* Recovery badges: rebuild the recovery area of each round box */
+  const srcAreas = document.querySelectorAll('#rounds-group .round-box .recovery-area');
+  const dstAreas = _roundBarEl.querySelectorAll('.round-bar-recovery');
+  srcAreas.forEach((srcArea, i) => {
+    const dstArea = dstAreas[i];
+    if(!dstArea) return;
+    dstArea.innerHTML = '';
+    Array.from(srcArea.children).forEach(child => {
+      const c = child.cloneNode(true);
+      c.style.pointerEvents = 'none';
+      dstArea.appendChild(c);
+    });
+  });
+
+  /* Paint the clone's turn/VP/auto-check state */
+  refreshRoundBarClone();
+}
+
+/* Copies live state (turn colour, score, checkbox ticks, victory glow)
+   from the originals onto the bar's clone. */
+function refreshRoundBarClone(){
+  if(!roundBarVisible || !_roundBarEl) return;
+  const clone = _roundBarEl.querySelector('.left-status-group');
+  if(!clone) return;
+
+  const origTurn  = document.getElementById('turn-box');
+  const cloneTurn = clone.querySelector('.turn-box');
+  if(origTurn && cloneTurn){
+    cloneTurn.classList.toggle('cao',           origTurn.classList.contains('cao'));
+    cloneTurn.classList.toggle('anti-cao',      origTurn.classList.contains('anti-cao'));
+    cloneTurn.classList.toggle('auto-disabled', origTurn.classList.contains('auto-disabled'));
+  }
+
+  const origScore  = document.getElementById('score-display');
+  const cloneScore = clone.querySelector('.vp-middle > span');
+  if(origScore && cloneScore){
+    cloneScore.textContent = origScore.textContent;
+    cloneScore.className   = origScore.className;
+  }
+
+  const origAutoTurn = document.getElementById('auto-turn');
+  const origAutoVp   = document.getElementById('auto-vp');
+  const cloneChecks  = clone.querySelectorAll('.auto-check input');
+  if(cloneChecks[0] && origAutoTurn) cloneChecks[0].checked = origAutoTurn.checked;
+  if(cloneChecks[1] && origAutoVp)   cloneChecks[1].checked = origAutoVp.checked;
+
+  const cloneButtons = clone.querySelectorAll('.score-box button');
+  if(cloneButtons.length >= 2 && origAutoVp){
+    cloneButtons[0].disabled = origAutoVp.checked;
+    cloneButtons[1].disabled = origAutoVp.checked;
+  }
+
+  const origScoreBox  = document.querySelector('.score-box');
+  const cloneScoreBox = clone.querySelector('.score-box');
+  if(origScoreBox && cloneScoreBox){
+    cloneScoreBox.classList.toggle('victory', origScoreBox.classList.contains('victory'));
+  }
+}
+
+/* Auto-sync the clone whenever any of these state-changing functions run. */
+(function(){
+  ['toggleTurn','applyTurnVisual','updateAutoStates','recalcVP','changeScore',
+   'stepRoundState','advanceRoundState','updateIndicator']
+    .forEach(name => {
+      const orig = window[name];
+      if(typeof orig !== 'function') return;
+      window[name] = function(){
+        const r = orig.apply(this, arguments);
+        try { syncRoundBar(); } catch(e){}
+        return r;
+      };
+    });
+})();
+
+/* Copies visual state from the live originals into the clone. */
+function refreshRoundBarClone(){
+  if(!roundBarVisible || !_roundBarEl) return;
+  const clone = _roundBarEl.querySelector('.left-status-group');
+  if(!clone) return;
+
+  /* turn-box colour / disabled ring */
+  const origTurn  = document.getElementById('turn-box');
+  const cloneTurn = clone.querySelector('.turn-box');
+  if(origTurn && cloneTurn){
+    cloneTurn.classList.toggle('cao',           origTurn.classList.contains('cao'));
+    cloneTurn.classList.toggle('anti-cao',      origTurn.classList.contains('anti-cao'));
+    cloneTurn.classList.toggle('auto-disabled', origTurn.classList.contains('auto-disabled'));
+  }
+
+  /* score text + danger / victory classes */
+  const origScore  = document.getElementById('score-display');
+  const cloneScore = clone.querySelector('.vp-middle > span');
+  if(origScore && cloneScore){
+    cloneScore.textContent = origScore.textContent;
+    cloneScore.className   = origScore.className;
+  }
+
+  /* checkbox states */
+  const origAutoTurn = document.getElementById('auto-turn');
+  const origAutoVp   = document.getElementById('auto-vp');
+  const cloneChecks  = clone.querySelectorAll('.auto-check input');
+  if(cloneChecks[0] && origAutoTurn) cloneChecks[0].checked = origAutoTurn.checked;
+  if(cloneChecks[1] && origAutoVp)   cloneChecks[1].checked = origAutoVp.checked;
+
+  /* +/− disabled state on the score box */
+  const cloneButtons = clone.querySelectorAll('.score-box button');
+  if(cloneButtons.length >= 2 && origAutoVp){
+    cloneButtons[0].disabled = origAutoVp.checked;
+    cloneButtons[1].disabled = origAutoVp.checked;
+  }
+
+  /* victory glow */
+  const origScoreBox  = document.querySelector('.score-box');
+  const cloneScoreBox = clone.querySelector('.score-box');
+  if(origScoreBox && cloneScoreBox){
+    cloneScoreBox.classList.toggle('victory', origScoreBox.classList.contains('victory'));
+  }
+}
+
+/* Auto-sync the clone whenever the real state changes.  Every one of these
+   functions is called at the end of any state mutation, so this catches
+   every path — even ones the network patch calls remotely. */
+(function(){
+  ['toggleTurn','applyTurnVisual','updateAutoStates','recalcVP','changeScore']
+    .forEach(name => {
+      const orig = window[name];
+      if(typeof orig !== 'function') return;
+      window[name] = function(){
+        const r = orig.apply(this, arguments);
+        try { refreshRoundBarClone(); } catch(e){}
+        return r;
+      };
+    });
 })();
 
 window.onload=()=>{
