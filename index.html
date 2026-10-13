@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
 <title>曹魏開國 - 遊戲追蹤器</title>
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" defer></script>
 <style>
 :root{
   --cao-color:#3385ff;--cao-light-color:#99ddff;--anti-cao-color:#ff471a;--anti-cao-light-color:#e4a89b;
@@ -16,6 +16,116 @@
   --mountain-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cpath d='M-20 200 L40 90 L100 200 Z' fill='%237a9a55' fill-opacity='0.75'/%3E%3Cpath d='M60 200 L130 50 L200 200 Z' fill='%235a7a35' fill-opacity='0.8'/%3E%3Cpath d='M100 88 L130 50 L160 88 L145 80 L130 90 L115 80 Z' fill='%23f8f8f8' fill-opacity='0.9'/%3E%3Cpath d='M150 200 L200 110 L250 200 Z' fill='%236a8a45' fill-opacity='0.7'/%3E%3Cpath d='M178 130 L200 110 L222 130 Z' fill='%23f0f0f0' fill-opacity='0.7'/%3E%3C/svg%3E");
   --hills-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cellipse cx='40' cy='150' rx='65' ry='38' fill='%238aaa60' fill-opacity='0.55'/%3E%3Cellipse cx='130' cy='160' rx='75' ry='42' fill='%237a9a50' fill-opacity='0.5'/%3E%3Cellipse cx='90' cy='100' rx='55' ry='30' fill='%239aba70' fill-opacity='0.42'/%3E%3Cellipse cx='170' cy='70' rx='40' ry='22' fill='%2388a858' fill-opacity='0.45'/%3E%3Cpath d='M20 140 L55 70 L90 140 Z' fill='%237a9a55' fill-opacity='0.38'/%3E%3Cpath d='M95 155 L135 85 L175 155 Z' fill='%235a7a35' fill-opacity='0.34'/%3E%3Cpath d='M-10 90 L20 40 L50 90 Z' fill='%236a8a45' fill-opacity='0.3'/%3E%3C/svg%3E");
   --hills-sparse: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280'%3E%3Cellipse cx='70' cy='220' rx='72' ry='38' fill='%238aaa60' fill-opacity='0.4'/%3E%3Cellipse cx='200' cy='235' rx='78' ry='42' fill='%237a9a50' fill-opacity='0.34'/%3E%3Cellipse cx='150' cy='120' rx='55' ry='26' fill='%239aba70' fill-opacity='0.24'/%3E%3Cpath d='M40 240 L90 150 L140 240 Z' fill='%237a9a55' fill-opacity='0.28'/%3E%3Cpath d='M170 260 L215 170 L260 260 Z' fill='%235a7a35' fill-opacity='0.24'/%3E%3C/svg%3E");
+}
+/* ★ NEW: VP indicator danger colors */
+#score-display.vp-danger-mild {
+  color: #ef4444 !important;
+}
+#score-display.vp-danger-extreme {
+  color: #dc2626 !important;
+  animation: vpExtremePulse 1.2s ease-in-out infinite;
+}
+@keyframes vpExtremePulse {
+  0%,100% { text-shadow: 0 0 6px rgba(220,38,38,.45); }
+  50%     { text-shadow: 0 0 18px rgba(220,38,38,1); }
+}
+
+/* ★ Semi-random dice widget — stacked to exactly match ONE die's footprint */
+.semirandom-widget{
+  display:flex;
+  flex-direction:column;
+  gap:5px;                                 /* matches .dice-group gap */
+  width:var(--dice-size);                  /* 110px — same as one die */
+  height:var(--dice-size);                 /* 110px — same as one die */
+  margin-right:5px;                        /* matches .dice-group gap */
+  flex-shrink:0;
+}
+.semirandom-btn,
+.semirandom-enable-btn{
+  flex:1 1 0;                              /* equal split of remaining height */
+  width:100%;
+  min-height:0;
+  border:3px solid #666;
+  border-radius:12px;
+  background:#1a1a1a;
+  color:#888;
+  cursor:pointer;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:4px;
+  transition:transform .1s,background .2s,box-shadow .2s,border-color .2s,color .2s;
+  font-family:inherit;
+  user-select:none;
+  box-shadow:0 4px 6px rgba(0,0,0,.3);
+  padding:0 4px;
+  box-sizing:border-box;
+  overflow:hidden;
+  white-space:nowrap;
+}
+.semirandom-btn:hover,
+.semirandom-enable-btn:hover{
+  background:#222;
+  transform:translateY(-2px);
+}
+.semirandom-btn:active,
+.semirandom-enable-btn:active{
+  transform:translateY(1px);
+  box-shadow:0 1px 2px rgba(0,0,0,.3);
+}
+
+/* ── Top button: side indicator ── */
+.semirandom-btn{
+  font-size:13px;
+  font-weight:bold;
+  letter-spacing:0.5px;
+}
+.semirandom-emoji{font-size:16px;line-height:1;}
+.semirandom-text{font-size:13px;font-weight:bold;letter-spacing:0.5px;line-height:1;}
+
+/* ── Bottom button: 啟用 toggle ── */
+.semirandom-enable-btn{
+  font-size:15px;
+  font-weight:bold;
+  letter-spacing:1px;
+}
+
+/* ── Side color coding (top button) ── */
+.semirandom-btn.side-cao{
+  border-color:#3385ff;
+  color:#99ddff;
+}
+.semirandom-btn.side-cao:hover{
+  border-color:#5aa0e8;
+  box-shadow:0 6px 12px rgba(51,133,255,.35);
+}
+.semirandom-btn.side-anti{
+  border-color:#ff471a;
+  color:#e4a89b;
+}
+.semirandom-btn.side-anti:hover{
+  border-color:#ff7b5a;
+  box-shadow:0 6px 12px rgba(255,71,26,.35);
+}
+
+/* ── ENABLED state: green interior on both buttons + ring in side color ── */
+.semirandom-widget.active .semirandom-btn{
+  border-color:#44ff88;
+  color:#d8ffd8;
+  background:linear-gradient(180deg,#1a3a1a,#0a1a0a);
+  box-shadow:0 0 14px rgba(68,255,136,.55);
+}
+.semirandom-widget.active.side-cao .semirandom-btn{
+  box-shadow:0 0 14px rgba(68,255,136,.55), 0 0 0 3px rgba(51,133,255,.55);
+}
+.semirandom-widget.active.side-anti .semirandom-btn{
+  box-shadow:0 0 14px rgba(68,255,136,.55), 0 0 0 3px rgba(255,71,26,.55);
+}
+.semirandom-widget.active .semirandom-enable-btn{
+  border-color:#44ff88;
+  color:#c8ffc8;
+  background:linear-gradient(180deg,#1a5a1a,#0e3a0e);
+  box-shadow:0 0 14px rgba(68,255,136,.5);
 }
 body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background-color:var(--bg-color);display:flex;justify-content:center;align-items:flex-start;min-height:100vh;margin:0;padding:20px;overflow-x:auto}
 .game-board{background:transparent;padding:20px;border-radius:12px;width:100%;max-width:1750px;display:flex;flex-direction:column;gap:50px;position:relative}
@@ -637,6 +747,7 @@ body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background-color:var
     <button class="roll-btn util-btn" onclick="openLoad()">📂<br>載入</button>
 	<button class="roll-btn util-btn" id="online-btn" onclick="openOnlineMenu()">🌐<br>線上</button>
 	<button class="roll-btn util-btn" id="mode-btn" onclick="openModeMenu()">🎮<br>模式</button>
+	<button class="roll-btn util-btn" id="ai-pause-btn" onclick="toggleAIPause()" style="display:none;">⏸<br>暫停</button>
   </div>
 </div>
 
@@ -1138,6 +1249,16 @@ body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background-color:var
   </div>
 
   <div class="dice-section">
+    <!-- ★ semi-random toggle widget (left of first die) -->
+    <div class="semirandom-widget">
+      <button type="button" class="semirandom-btn side-cao" id="semirandom-btn" onclick="cycleSemiRandomSide()" title="點擊切換：曹操方 / 反曹方（各自獨立運氣）">
+        <span class="semirandom-emoji">🎲</span>
+        <span class="semirandom-text" id="semirandom-side-label">曹操</span>
+      </button>
+      <button type="button" class="semirandom-enable-btn" id="semirandom-enable" onclick="toggleSemiRandomEnabled()" title="開啟／關閉半隨機（每擲一次消耗一次）">
+        <span id="semirandom-enable-label">啟用</span>
+      </button>
+    </div>
     <div class="dice-group">
       <div class="dice" onclick="rollDice(this)" data-value="1"><div class="dice-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>
       <div class="dice" onclick="rollDice(this)" data-value="1"><div class="dice-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>
@@ -1214,6 +1335,17 @@ body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background-color:var
         <button class="dbg-btn" onclick="renderSaveTextarea()">🔄 重新產生</button>
       </div>
       <div id="save-status" style="color:#9fe8a0;font-size:12px;margin-top:8px"></div>
+
+      <h3 style="margin-top:24px;">📊 遊戲日誌（機器學習用）</h3>
+      <p>所有遊戲事件都會自動記錄（JSONL 格式，每行一筆）。可下載給 AI 訓練。</p>
+      <div style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap;align-items:center;">
+        <span id="log-count" style="color:#888;font-size:12px;">0 筆事件</span>
+        <button class="dbg-btn" onclick="downloadBigLog()">💾 下載日誌 (.jsonl)</button>
+        <button class="dbg-btn" onclick="copyBigLog()">📋 複製</button>
+        <button class="dbg-btn danger" onclick="clearBigLog()">🗑 清空</button>
+        <button class="dbg-btn" onclick="refreshBigLogView()">🔄 重新整理</button>
+      </div>
+      <textarea id="log-textarea" readonly placeholder="尚無日誌記錄，開始遊戲後會自動出現。" style="min-height:180px;background:#0a0a0a;color:#9fe8a0;font-size:11px;"></textarea>
     </div>
   </div>
 </div>
@@ -1241,6 +1373,1180 @@ body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background-color:var
 <script>
 const CONFIG={kangcaoThreshold:6,autoTurnThreshold:7,maxAntiCao:4};
 const MAX_STAT=7;
+
+/* ══════════════════════════════════════════════════════════════════
+   BIG LOG — structured event recorder for ML training
+   Every entry is one JSON object per line (JSONL). Download from 保存.
+   ══════════════════════════════════════════════════════════════════ */
+const BIGLOG = {
+  startTime: Date.now(),
+  entries: [],
+  seq: 0,
+  _refreshTimer: null,
+};
+
+function bigLogEvent(type, data){
+  const now = Date.now();
+  const entry = Object.assign({
+    t: now - BIGLOG.startTime,
+    ts: new Date(now).toISOString(),
+    seq: BIGLOG.seq++,
+    type: type
+  }, data || {});
+  BIGLOG.entries.push(entry);
+  const modal = document.getElementById('save-modal');
+  if(modal && modal.classList.contains('active')){
+    if(!BIGLOG._refreshTimer){
+      BIGLOG._refreshTimer = setTimeout(() => {
+        BIGLOG._refreshTimer = null;
+        if(typeof refreshBigLogView === 'function') refreshBigLogView();
+      }, 300);
+    }
+  }
+}
+
+/* Compact game-state snapshot embedded in major events */
+function bigLogSnapshot(){
+  const troops = {};
+  for(const id in troopState){
+    const st = troopState[id];
+    troops[id] = [troopConfig[id].faction, st.hp, st.maxHp, st.combat, st.location];
+  }
+  const diplo = {};
+  document.querySelectorAll('.chess-piece').forEach(p => {
+    const fac = getFactionFromPiece(p);
+    if(!fac) return;
+    const content = p.parentElement && p.parentElement.closest('.diplo-content');
+    let area = 'unknown';
+    if(content) area = content.id;
+    else if(p.parentElement && p.parentElement.closest('#eliminated-content')) area = 'eliminated';
+    diplo[fac] = [area, p.classList.contains('flipped') ? 1 : 0];
+  });
+  const strategists = {};
+  document.querySelectorAll('.strategist-piece').forEach(s => {
+    if(s.id === 'emperor-piece') return;
+    const name = Array.from(s.querySelectorAll('.strategist-inner span'))
+                     .map(x => x.textContent).join('');
+    if(!name) return;
+    strategists[name] = {
+      faction: s.dataset.faction,
+      flipped: s.classList.contains('flipped') ? 1 : 0
+    };
+  });
+  const emp = document.getElementById('emperor-piece');
+  return {
+    score, isCaoCaoTurn, round: currentRound, stateIndex,
+    troops, diplo, strategists,
+    fallen: Array.from(fallenFactions),
+    emperorFlipped: emp ? (emp.classList.contains('flipped') ? 1 : 0) : 0
+  };
+}
+
+function bigLogAsJSONL(){
+  return BIGLOG.entries.map(e => JSON.stringify(e)).join('\n');
+}
+function refreshBigLogView(){
+  const ta = document.getElementById('log-textarea');
+  const cnt = document.getElementById('log-count');
+  if(cnt) cnt.textContent = BIGLOG.entries.length + ' 筆事件';
+  if(ta){
+    const MAX_VIEW = 1000;
+    const entries = BIGLOG.entries.length > MAX_VIEW
+      ? BIGLOG.entries.slice(-MAX_VIEW)
+      : BIGLOG.entries;
+    ta.value = entries.map(e => JSON.stringify(e)).join('\n');
+  }
+}
+function downloadBigLog(){
+  try{
+    const blob = new Blob([bigLogAsJSONL()], { type: 'application/x-jsonlines' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    a.href = url;
+    a.download = 'caowei-log-' + ts + '.jsonl';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    const st = document.getElementById('save-status');
+    if(st){ st.textContent = '✓ 日誌已下載（' + BIGLOG.entries.length + ' 筆）'; st.style.color = '#9fe8a0'; }
+  }catch(err){ alert('下載失敗：' + err.message); }
+}
+function copyBigLog(){
+  const text = bigLogAsJSONL();
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(() => {
+        const st = document.getElementById('save-status');
+        if(st){ st.textContent = '✓ 日誌已複製（' + BIGLOG.entries.length + ' 筆）'; st.style.color = '#9fe8a0'; }
+      });
+    } else {
+      const ta = document.getElementById('log-textarea');
+      if(ta){ ta.select(); document.execCommand('copy'); }
+    }
+  }catch(e){}
+}
+function clearBigLog(){
+  if(!confirm('清空所有日誌？此動作無法復原。')) return;
+  BIGLOG.entries = [];
+  BIGLOG.seq = 0;
+  BIGLOG.startTime = Date.now();
+  refreshBigLogView();
+  const st = document.getElementById('save-status');
+  if(st){ st.textContent = '日誌已清空'; st.style.color = '#9fe8a0'; }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Game mode — who plays each side: 'human' or 'ai'
+   ══════════════════════════════════════════════════════════════════ */
+const modeConfig = { cao: 'human', anti: 'human' };
+let aiRunning = false;
+let aiPaused = false;
+let aiAwaitingAdvance = false;     // ★ ADD THIS
+
+function updateAIPauseButton(){
+  const btn = document.getElementById('ai-pause-btn');
+  if(!btn) return;
+  const isAIVAI = (modeConfig.cao === 'ai' && modeConfig.anti === 'ai');
+  btn.style.display = isAIVAI ? '' : 'none';
+  if(aiPaused){
+    btn.innerHTML = '▶<br>繼續';
+    btn.style.background = 'linear-gradient(180deg,#2a5a2a,#1a3a1a)';
+    btn.style.borderColor = '#44ff88';
+  } else {
+    btn.innerHTML = '⏸<br>暫停';
+    btn.style.background = '';
+    btn.style.borderColor = '';
+  }
+}
+
+function toggleAIPause(){
+  aiPaused = !aiPaused;
+  updateAIPauseButton();
+  if(!aiPaused) scheduleAICheck();
+}
+
+function setMode(side, type){
+  if(side !== 'cao' && side !== 'anti') return;
+  if(type !== 'human' && type !== 'ai') return;
+  modeConfig[side] = type;
+  aiPaused = false;
+  updateAIPauseButton();
+  if (typeof openModeMenu === 'function') openModeMenu();
+}
+
+function startModeGame(){
+  if (typeof hideOnlineModal === 'function') hideOnlineModal();
+  aiPaused = false;
+  updateAIPauseButton();
+  if (!gameStarted) markGameStarted();
+  scheduleAICheck();
+}
+
+function scheduleAICheck(){ setTimeout(maybeRunAI, 60); }
+
+function sideOfPlayerTurn(){
+  // stateSequence[idx].color is the "first-player" coloring for this index.
+  // If Cao is NOT the round's first player, flip the color.
+  const baseColor = stateSequence[stateIndex].color;      // 'cao' | 'anti-cao'
+  const actualColor = isCaoCaoTurn
+    ? baseColor
+    : (baseColor === 'cao' ? 'anti-cao' : 'cao');
+  return actualColor === 'cao' ? 'cao' : 'anti';
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   AI battle resolution — runs a full combat round-by-round.
+
+   Rule study (10.2.3 戰鬥):
+     • 騎兵先攻      — cavalry strikes before infantry
+     • 兵力決定骰數  — current HP = number of dice rolled
+     • 骰點 ≤ 戰力    — each die ≤ combat = 1 damage
+   Target-picking (per user spec):
+     • Score = currentHP × combat  (expected damage output)
+     • Highest score attacks first
+     • Tie → smaller current HP attacks first
+     • Tie → random pick
+   ══════════════════════════════════════════════════════════════════ */
+
+function pickAttackerByEV(candidates){
+  if(!candidates || candidates.length === 0) return null;
+  const scored = candidates.map(w => {
+    const id = w.dataset.troop;
+    const hp = troopState[id].hp;
+    const cb = troopConfig[id].combat;
+    return { w, hp, cb, ev: hp * cb };
+  });
+  const maxEV = Math.max(...scored.map(s => s.ev));
+  const top = scored.filter(s => s.ev === maxEV);
+  if(top.length === 1) return top[0].w;
+  const minHp = Math.min(...top.map(s => s.hp));
+  const smallest = top.filter(s => s.hp === minHp);
+  if(smallest.length === 1) return smallest[0].w;
+  return smallest[Math.floor(Math.random() * smallest.length)].w;
+}
+
+function collectBattleTroops(targetEl, wantInvader, invaderFaction){
+  return Array.from(targetEl.querySelectorAll('.troop-wrapper')).filter(w => {
+    if(w.classList.contains('in-pool')) return false;
+    if(w.style.display === 'none') return false;
+    const st = troopState[w.dataset.troop];
+    if(!st || st.hp <= 0) return false;
+    if(st.location !== targetEl.id) return false;
+    const f = troopConfig[w.dataset.troop].faction;
+    const isInv = (f === invaderFaction);
+    return isInv === wantInvader;
+  });
+}
+
+/* Return living enemies of `striker` in this battle. */
+function aiLivingEnemiesOf(striker){
+  if(!pendingBattle) return [];
+  const { targetProvince, invaderFaction } = pendingBattle;
+  const targetEl = document.getElementById(targetProvince);
+  if(!targetEl) return [];
+  const strikerFac = troopConfig[striker.dataset.troop].faction;
+  const strikerIsInv = (strikerFac === invaderFaction);
+  return Array.from(targetEl.querySelectorAll('.troop-wrapper')).filter(w => {
+    if(w.classList.contains('in-pool')) return false;
+    if(w.style.display === 'none') return false;
+    const st = troopState[w.dataset.troop];
+    if(!st || st.hp <= 0) return false;
+    if(st.location !== targetEl.id) return false;
+    const f = troopConfig[w.dataset.troop].faction;
+    const isInv = (f === invaderFaction);
+    return isInv !== strikerIsInv;
+  });
+}
+
+/* Pick the next pip target: highest current-HP enemy.
+   Tie → smaller maxHp (expendable unit eats it). Tie → random. */
+function aiPickPipTarget(striker){
+  const enemies = aiLivingEnemiesOf(striker);
+  if(enemies.length === 0) return null;
+  let maxHp = -1;
+  for(const e of enemies){
+    const h = troopState[e.dataset.troop].hp;
+    if(h > maxHp) maxHp = h;
+  }
+  const top = enemies.filter(e => troopState[e.dataset.troop].hp === maxHp);
+  if(top.length === 1) return top[0];
+  let minMax = Infinity;
+  for(const t of top){
+    const m = troopState[t.dataset.troop].maxHp;
+    if(m < minMax) minMax = m;
+  }
+  const smallest = top.filter(t => troopState[t.dataset.troop].maxHp === minMax);
+  return smallest[Math.floor(Math.random() * smallest.length)];
+}
+
+/* One strike: roll `hp` dice, hit on ≤combat, apply each hit as one
+   damage pip to the current highest-HP enemy. Re-evaluates after each pip. */
+function applyAIStrike(attacker){
+  const atkId = attacker.dataset.troop;
+  const st = troopState[atkId];
+  const cfg = troopConfig[atkId];
+  if(!st || st.hp <= 0) return { dice: [], hits: 0, casualties: [] };
+
+  const dice = [];
+  let hits = 0;
+  for(let i = 0; i < st.hp; i++){
+    const roll = Math.floor(Math.random() * 6) + 1;
+    dice.push(roll);
+    if(roll <= cfg.combat) hits++;
+  }
+
+  const casualties = [];
+  const fakeEvent = { stopPropagation(){} };
+  for(let i = 0; i < hits; i++){
+    const target = aiPickPipTarget(attacker);
+    if(!target) break;
+    const tid = target.dataset.troop;
+    const before = troopState[tid].hp;
+    changeTroopHp(tid, -1, fakeEvent);
+    casualties.push({ victimId: tid, before, after: troopState[tid].hp });
+  }
+
+  if(typeof bigLogEvent === 'function'){
+    bigLogEvent('battle_strike', {
+      attackerId: atkId,
+      attackerFaction: cfg.faction,
+      attackerHp: st.hp,
+      attackerCombat: cfg.combat,
+      dice, hits, casualties
+    });
+  }
+  return { dice, hits, casualties };
+}
+/* Strategist spend: does this side have an unused strategist that matches
+   the given troop's side? */
+function aiHasStrategistFor(troopEl){
+  const side = aiFactionSide(troopConfig[troopEl.dataset.troop].faction);
+  return aiAvailableStrategistsFor(side).length > 0;
+}
+function aiConsumeStrategistFor(troopEl){
+  const side = aiFactionSide(troopConfig[troopEl.dataset.troop].faction);
+  const pool = aiAvailableStrategistsFor(side);
+  if(pool.length > 0) pool[0].classList.add('flipped');
+}
+/* Build the alternating strike queue for ONE round.
+   Cavalry phase: Defender, Attacker, Defender, Attacker, ...
+   Infantry phase: Defender, Attacker, Defender, Attacker, ...
+   Within a side, sort by current EV descending so the strongest strikes first. */
+function aiBuildStrikeQueue(invaders, defenders){
+  const isCav = w => !!troopConfig[w.dataset.troop].cavalry;
+  const sortByEV = arr => arr.slice().sort((a, b) => {
+    const ea = troopState[a.dataset.troop].hp * troopConfig[a.dataset.troop].combat;
+    const eb = troopState[b.dataset.troop].hp * troopConfig[b.dataset.troop].combat;
+    return eb - ea;
+  });
+
+  const defCav = sortByEV(defenders.filter(isCav));
+  const invCav = sortByEV(invaders.filter(isCav));
+  const defInf = sortByEV(defenders.filter(w => !isCav(w)));
+  const invInf = sortByEV(invaders.filter(w => !isCav(w)));
+
+  const queue = [];
+  let i = 0, j = 0;
+  while(i < defCav.length || j < invCav.length){
+    if(i < defCav.length) queue.push(defCav[i++]);
+    if(j < invCav.length) queue.push(invCav[j++]);
+  }
+  i = 0; j = 0;
+  while(i < defInf.length || j < invInf.length){
+    if(i < defInf.length) queue.push(defInf[i++]);
+    if(j < invInf.length) queue.push(invInf[j++]);
+  }
+  return queue;
+}
+
+/* Strategist reroll — same heuristic as before, but the function takes one
+   strike result and may reroll the same unit once. */
+function aiMaybeRerollStrike(unit){
+  const myHp = troopState[unit.dataset.troop].hp;
+  const myMax = troopState[unit.dataset.troop].maxHp;
+  const mySide = aiFactionSide(troopConfig[unit.dataset.troop].faction);
+  if(aiAvailableStrategistsFor(mySide).length === 0) return;
+  // Enemy about to die? Kill shot.
+  const enemies = aiLivingEnemiesOf(unit);
+  const oneHpTarget = enemies.some(e => troopState[e.dataset.troop].hp <= 1);
+  const expected = myHp * troopConfig[unit.dataset.troop].combat / 6;
+  if(oneHpTarget || (myHp * 2 <= myMax) || expected >= 1.5){
+    aiConsumeStrategistFor(unit);
+    applyAIStrike(unit);   // reroll
+  }
+}
+
+/* One-round battle. Attackers retreat if any defender survives. */
+function resolveBattleAI(){
+  if(typeof pendingBattle === 'undefined' || !pendingBattle) return false;
+  const { targetProvince, originProvince, invaderFaction } = pendingBattle;
+  const targetEl = document.getElementById(targetProvince);
+  if(!targetEl){ pendingBattle = null; hideRetreatButton(); return false; }
+
+  const startInvaders = collectBattleTroops(targetEl, true, invaderFaction);
+  const startDefenders = collectBattleTroops(targetEl, false, invaderFaction);
+  if(startInvaders.length === 0 || startDefenders.length === 0){
+    pendingBattle = null;
+    hideRetreatButton();
+    return true;
+  }
+
+  const queue = aiBuildStrikeQueue(startInvaders, startDefenders);
+
+  for(const unit of queue){
+    const st = troopState[unit.dataset.troop];
+    if(!st || st.hp <= 0) continue;                 // died before its turn
+    const result = applyAIStrike(unit);
+    if(result.hits === 0) aiMaybeRerollStrike(unit);
+    // Early exit if one side is wiped
+    if(collectBattleTroops(targetEl, true, invaderFaction).length === 0) break;
+    if(collectBattleTroops(targetEl, false, invaderFaction).length === 0) break;
+  }
+
+  // ── Resolve ──
+  const defendersLeft = collectBattleTroops(targetEl, false, invaderFaction);
+  const invadersLeft  = collectBattleTroops(targetEl, true,  invaderFaction);
+
+  if(defendersLeft.length === 0){
+    // Attackers win — they keep the province
+    pendingBattle = null;
+    hideRetreatButton();
+    return true;
+  }
+
+  // Attackers retreat (all-or-nothing)
+  const originEl = document.getElementById(originProvince);
+  if(originEl){
+    invadersLeft.forEach(w => {
+      w.classList.remove('in-pool','in-external');
+      w.style.setProperty('--offset-x','0px');
+      w.style.setProperty('--offset-y','0px');
+      originEl.appendChild(w);
+      troopState[w.dataset.troop].location = originProvince;
+      updateTroopRotation(w.dataset.troop);
+    });
+    layoutRegion(originProvince);
+  }
+  layoutRegion(targetProvince);
+  recalcVP();
+  pendingBattle = null;
+  hideRetreatButton();
+  scheduleAutoSave();
+  return true;
+}
+
+function maybeRunAI(){
+  if(aiRunning){
+    // An AI action is already queued. Don't drop this check — come back.
+    setTimeout(maybeRunAI, 120);
+    return;
+  }
+  if(aiPaused) return;
+  if(!gameStarted || gameOver) return;
+  if(typeof net !== 'undefined' && (net.isHost || net.isGuest)) return;
+  if(aiAwaitingAdvance) return;              // ★ NEW — one action per round
+  const side = sideOfPlayerTurn();
+  if(modeConfig[side] !== 'ai') return;
+  aiRunning = true;
+  setTimeout(() => {
+    try { aiTakeTurn(); }
+    catch(e){ console.error('[AI]', e); }
+    finally {
+      aiRunning = false;
+      // Always come back for the next step
+      setTimeout(maybeRunAI, 120);
+    }
+  }, 500);
+}
+
+/* Which factions belong to the current AI's side? */
+function aiFactionSide(faction){
+  if (faction === 'caocao') return 'cao';
+  if (document.querySelector('#content-liancao .chess-piece.piece-'+faction)) return 'cao';
+  if (document.querySelector('#content-fancao .chess-piece.piece-'+faction))  return 'anti';
+  return 'neutral';
+}
+
+/* Unused strategists that belong to a side (cao = caocao's 3; anti = any
+   strategist whose faction is currently in 反曹). */
+function aiAvailableStrategistsFor(side){
+  const arr = [];
+  document.querySelectorAll('.strategist-piece').forEach(s => {
+    if(s.id === 'emperor-piece') return;
+    if(s.classList.contains('flipped')) return;
+    const fac = s.dataset && s.dataset.faction;
+    if(!fac) return;
+    if(side === 'cao' && fac === 'caocao') arr.push(s);
+    else if(side === 'anti' && fac !== 'caocao'
+            && document.querySelector('#content-fancao .chess-piece.piece-'+fac)){
+      arr.push(s);
+    }
+  });
+  return arr;
+}
+
+/* Expected hits per strike — hp dice, each hits on a roll ≤ combat.
+   With `s` strategists available, a whiff gets rerolled up to s times.
+   Small troops (low hp×combat) get a bigger relative boost, matching the
+   user's intuition: a 1-HP combat-2 troop whiffs 2/3 of the time, so its
+   reroll is worth far more than a 5-combat veteran's. */
+function aiExpectedHits(hp, combat, stratCount){
+  if(hp <= 0) return 0;
+  const base = hp * combat / 6;
+  if(stratCount <= 0) return base;
+  const pMiss = Math.pow((6 - combat) / 6, hp);   // P(0 hits in one strike)
+  if(pMiss <= 0 || pMiss >= 1) return base;
+  // Geometric series: E × (1 + p + p² + … + p^s)
+  const factor = (1 - Math.pow(pMiss, stratCount + 1)) / (1 - pMiss);
+  return base * factor;
+}
+
+/* Deterministic expected-value duel.
+
+   Rules from the codebase:
+     • Cavalry strikes first (else attacker strikes first)
+     • Each side rolls CURRENT HP dice, each ≤combat lands 1 damage
+     • Strategists reroll whiffs
+   Because each side's expected damage depends on its live HP, we iterate
+   round by round until someone hits 0 (or 20 rounds to bail out).
+
+   Returns: { attackerHP, defenderHP, winner, spentStratsA, spentStratsD }
+*/
+function aiSimulateDuel(atkHp, atkCb, atkCav, atkStrats,
+                        defHp, defCb, defCav, defStrats){
+  let a = atkHp, d = defHp;
+  const atkFirst = atkCav || !defCav;
+  let spentA = 0, spentD = 0;
+  let guard = 0;
+  while(a > 0 && d > 0 && guard++ < 20){
+    if(atkFirst){
+      // Attacker strikes
+      const aStrats = atkStrats - spentA;
+      const used = Math.min(1, aStrats);
+      const pMiss = Math.pow((6 - atkCb) / 6, a);
+      const dmg = aiExpectedHits(a, atkCb, used);
+      if(used > 0 && pMiss > 0) spentA += pMiss;   // expected strategist use
+      d = Math.max(0, d - dmg);
+      if(d <= 0) break;
+      // Defender strikes back
+      const dStrats = defStrats - spentD;
+      const usedD = Math.min(1, dStrats);
+      const pMissD = Math.pow((6 - defCb) / 6, d);
+      const dmgD = aiExpectedHits(d, defCb, usedD);
+      if(usedD > 0 && pMissD > 0) spentD += pMissD;
+      a = Math.max(0, a - dmgD);
+    } else {
+      // Defender strikes first
+      const dStrats = defStrats - spentD;
+      const usedD = Math.min(1, dStrats);
+      const pMissD = Math.pow((6 - defCb) / 6, d);
+      const dmgD = aiExpectedHits(d, defCb, usedD);
+      if(usedD > 0 && pMissD > 0) spentD += pMissD;
+      a = Math.max(0, a - dmgD);
+      if(a <= 0) break;
+      // Attacker strikes back
+      const aStrats = atkStrats - spentA;
+      const used = Math.min(1, aStrats);
+      const pMiss = Math.pow((6 - atkCb) / 6, a);
+      const dmg = aiExpectedHits(a, atkCb, used);
+      if(used > 0 && pMiss > 0) spentA += pMiss;
+      d = Math.max(0, d - dmg);
+    }
+  }
+  return {
+    attackerHP: a, defenderHP: d,
+    winner: (a > 0 && d <= 0) ? 'attacker'
+          : (d > 0 && a <= 0) ? 'defender'
+          : 'stalemate',
+    spentStratsA: spentA, spentStratsD: spentD
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   AI decision-making (log-driven rework)
+
+   Key improvements over the old first-valid-action picker:
+     • Attack only when the EV favours us, avoiding suicidal dives.
+     • Deploy to FRONTIER provinces (those bordering an enemy).
+     • Consolidate — move a lone troop toward a friendly concentration.
+     • Heal only when hp < half (don't waste actions on light damage).
+     • 拉攏 priority is lower — diplomacy only when no military action.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Which provinces are controlled by this side? */
+function aiOwnedProvinces(side){
+  const owned = [];
+  for(const pid of Object.keys(PROVINCE_ADJ)){
+    const ctrl = getProvinceController(pid);
+    if(ctrl === null) continue;
+    if(aiFactionSide(ctrl) === side) owned.push(pid);
+  }
+  return owned;
+}
+
+/* Frontier = we own it AND a neighbour is enemy-controlled. */
+function aiFrontierProvinces(side){
+  return aiOwnedProvinces(side).filter(pid =>
+    (PROVINCE_ADJ[pid] || []).some(n => {
+      const nc = getProvinceController(n);
+      if(nc === null) return false;
+      const ns = aiFactionSide(nc);
+      return ns !== side && ns !== 'neutral';
+    })
+  );
+}
+
+/* Is this province currently empty of enemy troops we'd have to fight? */
+function aiProvinceIsSafe(targetId, myFaction){
+  const el = document.getElementById(targetId);
+  if(!el) return false;
+  const troops = Array.from(el.querySelectorAll('.troop-wrapper'))
+    .filter(w => !w.classList.contains('in-pool') && w.style.display !== 'none');
+  if(troops.length === 0) return true;
+  return troops.every(w => {
+    const f = troopConfig[w.dataset.troop].faction;
+    return f === myFaction || isAllyOf(myFaction, f);
+  });
+}
+
+/* Would attacking `targetId` with `attackerId` likely win?
+   Runs a deterministic EV duel including strategist rerolls and the
+   defender's expected counter-damage. */
+function aiWouldWinBattle(attackerId, targetId){
+  const atkSt = troopState[attackerId];
+  const atkCfg = troopConfig[attackerId];
+  if(!atkSt || atkSt.hp <= 0) return { win:false, margin:-Infinity };
+  const targetEl = document.getElementById(targetId);
+  if(!targetEl) return { win:false, margin:-Infinity };
+
+  const defenders = Array.from(targetEl.querySelectorAll('.troop-wrapper'))
+    .filter(w => !w.classList.contains('in-pool') && w.style.display !== 'none');
+  const myFac = atkCfg.faction;
+  const enemies = defenders.filter(w => {
+    const f = troopConfig[w.dataset.troop].faction;
+    return f !== myFac && !isAllyOf(myFac, f);
+  });
+
+  // Empty or all-allied province → free win
+  if(enemies.length === 0) return { win:true, margin:1000, free:true };
+
+  // Pick the single strongest defender (matches resolveBattleAI's EV picker)
+  const def = pickAttackerByEV(enemies);
+  if(!def) return { win:false, margin:-Infinity };
+  const defId = def.dataset.troop;
+  const defSt = troopState[defId];
+  const defCfg = troopConfig[defId];
+  if(!defSt || defSt.hp <= 0) return { win:true, margin:1000 };
+
+  const mySide  = aiFactionSide(myFac);
+  const defSide = aiFactionSide(defCfg.faction);
+  const myStrats  = aiAvailableStrategistsFor(mySide).length;
+  const defStrats = aiAvailableStrategistsFor(defSide).length;
+
+  // One-round EV: sum expected hits on each side, account for the
+  // alternating queue so a unit killed before its turn deals 0 damage.
+  // This is a deterministic approximation (no randomness).
+  const isCavW = w => !!troopConfig[w.dataset.troop].cavalry;
+  const attackers = [atkSt && { id: attackerId, hp: atkSt.hp, cb: atkCfg.combat, cav: atkCfg.cavalry }].filter(Boolean);
+  const defenderList = enemies.map(e => {
+    const eid = e.dataset.troop;
+    return { id: eid, hp: troopState[eid].hp, cb: troopConfig[eid].combat, cav: troopConfig[eid].cavalry };
+  });
+
+  // Build the queue (unit ids only, sorted within side by EV desc)
+  const sortEV = a => a.slice().sort((x, y) => (y.hp * y.cb) - (x.hp * x.cb));
+  const dCav = sortEV(defenderList.filter(u => u.cav));
+  const aCav = sortEV(attackers.filter(u => u.cav));
+  const dInf = sortEV(defenderList.filter(u => !u.cav));
+  const aInf = sortEV(attackers.filter(u => !u.cav));
+  const queue = [];
+  let ii = 0, jj = 0;
+  while(ii < dCav.length || jj < aCav.length){
+    if(ii < dCav.length) queue.push({ u: dCav[ii++], side: 'D' });
+    if(jj < aCav.length) queue.push({ u: aCav[jj++], side: 'A' });
+  }
+  ii = 0; jj = 0;
+  while(ii < dInf.length || jj < aInf.length){
+    if(ii < dInf.length) queue.push({ u: dInf[ii++], side: 'D' });
+    if(jj < aInf.length) queue.push({ u: aInf[jj++], side: 'A' });
+  }
+
+  // Mutable HP state for the sim
+  const hp = {};
+  [...attackers, ...defenderList].forEach(u => { hp[u.id] = u.hp; });
+
+  const applyPips = (strikerSide, pips) => {
+    for(let i = 0; i < pips; i++){
+      // Highest-HP enemy of the striker's side
+      const enemiesList = strikerSide === 'A' ? defenderList : attackers;
+      let best = null, bestHp = -1;
+      for(const e of enemiesList){
+        if(hp[e.id] > bestHp){ bestHp = hp[e.id]; best = e; }
+      }
+      if(!best || bestHp <= 0) return;
+      hp[best.id] = Math.max(0, hp[best.id] - 1);
+    }
+  };
+
+  for(const entry of queue){
+    if(hp[entry.u.id] <= 0) continue;
+    const expected = hp[entry.u.id] * entry.u.cb / 6;
+    applyPips(entry.side, Math.round(expected));
+  }
+
+  const atkAlive = attackers.some(u => hp[u.id] > 0);
+  const defAlive = defenderList.some(u => hp[u.id] > 0);
+  const win = atkAlive && !defAlive;
+  const attackerSurvivors = attackers.filter(u => hp[u.id] > 0).length;
+  const margin = win ? attackerSurvivors : -defenderList.filter(u => hp[u.id] > 0).length;
+  const ourRemain = attackerSurvivors;
+
+  return {
+    win,
+    margin,
+    ourRemain,
+    theirRemain: defenderList.filter(u => hp[u.id] > 0).length,
+    extraEnemies: enemies.length - 1,
+    free: false
+  };
+}
+
+function pickAIActionForSide(side){
+  const frontier = new Set(aiFrontierProvinces(side));
+
+  // ── 0. Anti-Cao opportunity raid ─────────────────────────────────
+  // When the opposing side has zero available strategists, they can't
+  // reroll a whiff. That's the ideal window to grab a lightly defended
+  // province — e.g. 張揚 stealing an emptied 陳留.
+  const enemySide = side === 'cao' ? 'anti' : 'cao';
+  const enemyStrats = aiAvailableStrategistsFor(enemySide).length;
+  if(enemyStrats === 0){
+    for(const id in troopState){
+      const st = troopState[id];
+      if(!st || !st.location || !st.location.startsWith('region-')) continue;
+      if(st.hp <= 1) continue;
+      if(aiFactionSide(troopConfig[id].faction) !== side) continue;
+      const reach = computeReachableProvinces(st.location, troopConfig[id].faction);
+      for(const dest of reach){
+        if(dest === st.location) continue;
+        const targetEl = document.getElementById(dest);
+        if(!targetEl) continue;
+        const defenders = Array.from(targetEl.querySelectorAll('.troop-wrapper')).filter(w =>
+          !w.classList.contains('in-pool') && w.style.display !== 'none');
+        // Empty or 1 weak defender → raid
+        if(defenders.length === 0){
+          return { type:'move', troopId:id, provinceId:dest, intent:'raid' };
+        }
+        if(defenders.length === 1){
+          const dId = defenders[0].dataset.troop;
+          const dSt = troopState[dId];
+          const dCfg = troopConfig[dId];
+          // Only raid if we out-EV the defender heavily (no reroll protection for them)
+          const myEV = st.hp * troopConfig[id].combat;
+          const defEV = dSt.hp * dCfg.combat;
+          if(myEV >= defEV * 1.8){
+            return { type:'move', troopId:id, provinceId:dest, intent:'raid' };
+          }
+        }
+      }
+    }
+  }
+
+  // ── 1. Favorable attacks (ranked by expected remaining HP, then margin)
+  const attackOptions = [];
+  const seenTargets = new Set();
+  for(const id in troopState){
+    const st = troopState[id];
+    if(!st || !st.location || !st.location.startsWith('region-')) continue;
+    if(st.hp <= 1) continue;
+    if(aiFactionSide(troopConfig[id].faction) !== side) continue;
+    const reachable = computeReachableProvinces(st.location, troopConfig[id].faction);
+    for(const dest of reachable){
+      if(dest === st.location) continue;
+      if(seenTargets.has(dest)) continue;
+      seenTargets.add(dest);
+
+      const ctrl = getProvinceController(dest);
+      if(ctrl !== null && aiFactionSide(ctrl) === side
+         && aiProvinceIsSafe(dest, troopConfig[id].faction)) continue;
+
+      // ★ gather EVERY friendly troop that can reach dest
+      const group = [];
+      for(const oid in troopState){
+        const ost = troopState[oid];
+        if(!ost || !ost.location || !ost.location.startsWith('region-')) continue;
+        if(ost.hp <= 1) continue;
+        if(aiFactionSide(troopConfig[oid].faction) !== side) continue;
+        const r = computeReachableProvinces(ost.location, troopConfig[oid].faction);
+        if(r.has(dest)) group.push(oid);
+      }
+      if(group.length === 0) continue;
+
+      const result = aiWouldWinBattleGroup(group, dest);
+      if(!result || !result.win) continue;
+
+      const frontierBonus = frontier.has(dest) ? 3 : 0;
+      const vpBonus = (PROVINCE_RESOURCES[dest] || 0) * 2.5;
+      const score = (result.ourRemain || 0)
+                  + (result.margin || 0) * 0.5
+                  + frontierBonus + vpBonus
+                  + Math.random() * 0.5;
+      attackOptions.push({
+        troopIds: group, provinceId: dest,
+        margin: result.margin || 0,
+        ourRemain: result.ourRemain || 0,
+        score
+      });
+    }
+  }  
+if(attackOptions.length > 0){
+  attackOptions.sort((a,b) => b.score - a.score);
+  const best = attackOptions[0];
+  return { type:'moveGroup', troopIds: best.troopIds,
+           provinceId: best.provinceId, intent:'attack', plan: best };
+}
+
+  // ── 2. Deploy available troops to frontier provinces
+  // 遊戲外部隊 is not recruitable → only the 'available' pool counts
+  for(const id in troopState){
+    const st = troopState[id];
+    if(!st) continue;
+    if(st.location !== 'available') continue;
+    if(aiFactionSide(troopConfig[id].faction) !== side) continue;
+    const reachable = computePoolReachableProvinces(troopConfig[id].faction);
+    if(reachable.size === 0) continue;
+    const picks = [...reachable];
+    const front = picks.find(r => frontier.has(r));
+    return { type:'deploy', troopId: id, provinceId: front || picks[0] };
+  }
+
+  // ── 3. Heal badly wounded troops (< half HP)
+  let bestHeal = null, worstRatio = 1.0;
+  for(const id in troopState){
+    const st = troopState[id];
+    if(!st || !st.location || !st.location.startsWith('region-')) continue;
+    if(st.hp <= 0 || st.hp >= st.maxHp) continue;
+    if(st.hp * 2 > st.maxHp) continue;                       // skip light damage
+    if(aiFactionSide(troopConfig[id].faction) !== side) continue;
+    const ratio = st.hp / st.maxHp;
+    if(ratio < worstRatio){ worstRatio = ratio; bestHeal = id; }
+  }
+  if(bestHeal) return { type:'heal', troopId: bestHeal };
+
+  // ── 3b. Cao only: pull a 中立 piece to 聯曹 when nothing else helps.
+  // Rationale: getting allies first lets Cao use 獻帝 to trade HP
+  // without losing Cao troops — an ally absorbs the counterattack.
+  if(side === 'cao' && attackOptions.length === 0){
+    const neutrals = document.querySelectorAll('#content-zhongli .chess-piece');
+    for(const piece of neutrals){
+      const fac = getFactionFromPiece(piece);
+      if(!fac) continue;
+      // Is this piece flagged as "should be Cao-aligned"?
+      // (Rough proxy: if the piece's army is weak we'd rather have it neutral,
+      // but for Cao's shield strategy, any 中立 → 聯曹 is fine.)
+      const destArea = document.querySelector('#content-liancao .piece-area');
+      if(destArea && destArea.children.length < 4){
+        return { type:'laliang', piece, destId:'content-liancao' };
+      }
+    }
+  }
+
+// ── 4. Consolidate — only move toward a real target.
+// Never shuffle randomly between two safe provinces (that caused A↔B oscillation).
+for(const id in troopState){
+  const st = troopState[id];
+  if(!st || !st.location || !st.location.startsWith('region-')) continue;
+  if(aiFactionSide(troopConfig[id].faction) !== side) continue;
+  const reachable = computeReachableProvinces(st.location, troopConfig[id].faction);
+  const options = [...reachable].filter(r => r !== st.location);
+
+  for(const dest of options){
+    const ctrl = getProvinceController(dest);
+    // Only step into a province we already control or that is empty
+    if(ctrl !== null && aiFactionSide(ctrl) !== side) continue;
+
+    // Only worth moving if `dest` is adjacent to a province we don't control
+    // (i.e., we're staging toward a future attack).
+    const adj = PROVINCE_ADJ[dest] || [];
+    const useful = adj.some(n => {
+      if(n === st.location) return false;         // don't just undo
+      const nc = getProvinceController(n);
+      if(nc === null) return true;                // empty → future target
+      const ns = aiFactionSide(nc);
+      return ns !== side && ns !== 'neutral';     // enemy-held
+    });
+    if(useful){
+      return { type:'move', troopId: id, provinceId: dest, intent:'consolidate' };
+    }
+  }
+}
+// No useful consolidation → fall through to 拉攏 / advance.
+
+  // ── 5. 拉攏 — last resort
+  for(const piece of document.querySelectorAll('.chess-piece')){
+    const srcContent = piece.parentElement && piece.parentElement.closest('.diplo-content');
+    if(!srcContent || srcContent.id === 'eliminated-content') continue;
+    const faction = getFactionFromPiece(piece);
+    if(!faction) continue;
+    const srcId = srcContent.id;
+    let destId = null;
+    if(side === 'anti'){
+      if(srcId === 'content-liancao') destId = 'content-zhongli';
+      else if(srcId === 'content-zhongli') destId = 'content-fancao';
+    } else {
+      if(srcId === 'content-fancao') destId = 'content-zhongli';
+      else if(srcId === 'content-zhongli') destId = 'content-liancao';
+    }
+    if(!destId) continue;
+    const destArea = document.getElementById(destId) &&
+                     document.getElementById(destId).querySelector('.piece-area');
+    if(destArea && destArea.children.length < 4){
+      return { type:'laliang', piece, destId };
+    }
+  }
+
+  return { type:'advance' };
+}
+
+/* AI uses a strategist to reroll the 抗曹 dice if the current roll
+   helps the enemy more than the AI's own side. */
+function aiTryRerollKangCao(){
+  if(!aiShouldRerollKangCao()) return false;
+  const side = sideOfPlayerTurn();
+  // Pick the first unused strategist whose side matches
+  const strats = Array.from(document.querySelectorAll('.strategist-piece'))
+    .filter(s => s.id !== 'emperor-piece' && !s.classList.contains('flipped'));
+  const mine = strats.filter(s => {
+    const fac = s.dataset && s.dataset.faction;
+    if(side === 'cao') return fac === 'caocao';
+    // anti — any faction currently in 反曹
+    if(fac === 'caocao') return false;
+    return !!document.querySelector('#content-fancao .chess-piece.piece-'+fac);
+  });
+  if(mine.length === 0) return false;
+  const s = mine[0];
+  s.click();                                    // flips + glows 抗曹 button
+  setTimeout(()=>{
+    const btn = document.getElementById('kangcao-btn');
+    if(btn && (btn.classList.contains('reroll-cao') || btn.classList.contains('reroll-anti'))){
+      rollKangCao();
+    }
+    setTimeout(()=>scheduleAICheck(), 700);
+  }, 200);
+  return true;
+}
+function aiShouldRerollKangCao(){
+  const dice = document.querySelectorAll('.dice');
+  if(dice.length < 2) return false;
+  const v1 = parseInt(dice[0].dataset.value) || 1;
+  const v2 = parseInt(dice[1].dataset.value) || 1;
+  const side = sideOfPlayerTurn();
+  let friendCount = 0, enemyCount = 0;
+  document.querySelectorAll('.chess-piece').forEach(piece => {
+    const icon = piece.querySelector('.dice-icon');
+    if(!icon) return;
+    const v = parseInt(icon.dataset.dice);
+    if(v !== v1 && v !== v2) return;
+    const srcContent = piece.parentElement && piece.parentElement.closest('.diplo-content');
+    if(!srcContent || srcContent.id === 'eliminated-content') return;
+    const fac = getFactionFromPiece(piece);
+    if(!fac) return;
+    const isFriend = (aiFactionSide(fac) === side);
+    if(srcContent.id === 'content-fancao'){
+      // Already 反曹 — the roll forces a 徵召. Friend if it's our faction.
+      if(isFriend) friendCount++; else enemyCount++;
+    } else {
+      // Movable — will move toward 反曹, hurting whoever is at 聯曹 / helping the opposite side
+      if(isFriend) enemyCount++;   // our piece moving down = bad for us
+      else friendCount++;          // enemy piece moving down = good for us
+    }
+  });
+  return friendCount <= enemyCount;
+}
+
+function aiTakeTurn(){
+  if(!gameStarted || gameOver) return;
+  if(aiPaused) return;
+  if(modeConfig[sideOfPlayerTurn()] !== 'ai') return;
+
+  // ── 0. Battle pending → resolve in AI v AI
+  if(typeof pendingBattle !== 'undefined' && pendingBattle
+     && modeConfig.cao === 'ai' && modeConfig.anti === 'ai'){
+    resolveBattleAI();
+    // Battle resolve doesn't advance the round → keep the turn going.
+    scheduleAICheck();
+    return;
+  }
+
+  // ── 1. 抗曹 needs roll
+  const kcBtn = document.getElementById('kangcao-btn');
+  if(kcBtn && (kcBtn.classList.contains('needs-roll')
+            || kcBtn.classList.contains('reroll-cao')
+            || kcBtn.classList.contains('reroll-anti'))){
+    // If a previous roll is on screen and looks bad, try a strategist reroll.
+    if(kcBtn.classList.contains('reroll-cao') || kcBtn.classList.contains('reroll-anti')){
+      // Strategist already flipped → reroll with the button
+      rollKangCao();
+    } else {
+      // First roll of the round — roll first, then decide about a reroll
+      rollKangCao();
+      setTimeout(()=>{
+        // After the roll settles, evaluate whether a strategist reroll is worth it
+        if(aiShouldRerollKangCao()) aiTryRerollKangCao();
+        scheduleAICheck();
+      }, 900);
+      return;
+    }
+    setTimeout(()=>scheduleAICheck(), 700);
+    return;
+  }
+
+  // ── 2. 抗曹 active → pick a target
+  if(typeof kangCaoSelectionActive !== 'undefined' && kangCaoSelectionActive){
+    const allTargets = Array.from(document.querySelectorAll('.kangcao-target'));
+
+    // Only keep targets whose destination actually has room.
+    const viable = allTargets.filter(t => {
+      if(t.classList.contains('troop-wrapper')) return true;   // 徵召 always valid
+      const srcContent = t.parentElement && t.parentElement.closest('.diplo-content');
+      if(!srcContent) return false;
+      const srcId = srcContent.id;
+      const destId = (srcId === 'content-liancao') ? 'content-zhongli'
+                   : (srcId === 'content-zhongli') ? 'content-fancao'
+                   : null;
+      if(!destId) return false;
+      const destArea = document.getElementById(destId) &&
+                       document.getElementById(destId).querySelector('.piece-area');
+      return destArea && destArea.children.length < 4;
+    });
+
+    if(viable.length === 0){
+      // Nothing the AI can legally do — clear and advance.
+      endKangCaoCheck();
+      advanceRoundState();
+      return;
+    }
+
+    const heal = viable.find(t => t.classList.contains('troop-wrapper')
+                && troopState[t.dataset.troop]
+                && troopState[t.dataset.troop].hp < troopState[t.dataset.troop].maxHp);
+    const pick = heal || viable[0];
+
+    if(pick.classList.contains('troop-wrapper')){
+      pick.querySelector('.troop-piece').click();
+      scheduleAICheck();
+      return;
+    }
+    // 立場棋 — select then click its one-step-down column
+    pick.click();
+    setTimeout(()=>{
+      const srcContent = pick.parentElement && pick.parentElement.closest('.diplo-content');
+      if(!srcContent){ scheduleAICheck(); return; }
+      const srcId = srcContent.id;
+      const destId = (srcId === 'content-liancao') ? 'content-zhongli'
+                   : (srcId === 'content-zhongli') ? 'content-fancao'
+                   : null;
+      if(destId){
+        const dest = document.getElementById(destId);
+        if(dest) dest.click();
+      }
+      // If the click didn't actually clear the state (e.g. race), force it.
+      if(typeof kangCaoSelectionActive !== 'undefined' && kangCaoSelectionActive){
+        endKangCaoCheck();
+      }
+      setTimeout(()=>scheduleAICheck(), 400);
+    }, 350);
+    return;
+  }
+
+  // ── 3. Action step
+  const side = sideOfPlayerTurn();
+  const act = pickAIActionForSide(side);
+// ★ Stuck-detector: if the AI makes the same decision 6 times in a row
+//   without the board changing, force an advance to break the loop.
+if(!window._aiStuck){ window._aiStuck = { key:'', count:0 }; }
+const decisionKey = JSON.stringify(act);
+if(decisionKey === window._aiStuck.key){
+  if(++window._aiStuck.count > 5){
+    console.warn('[AI] stuck on', act.type, '— forcing advance');
+    window._aiStuck.key = ''; window._aiStuck.count = 0;
+    advanceRoundState();
+    return;
+  }
+} else {
+  window._aiStuck.key = decisionKey;
+  window._aiStuck.count = 0;
+}  
+
+  if(act.type === 'advance'){
+    advanceRoundState();
+    return;
+  }
+
+  if(act.type === 'heal'){
+    aiAwaitingAdvance = true;                // ★
+    changeTroopHp(act.troopId, 1, { stopPropagation(){} });
+    // changeTroopHp → scheduleAutoAdvance → advanceRoundState → scheduleAICheck
+    return;
+  }
+
+if(act.type === 'deploy'){
+    const w = document.getElementById('tw-' + act.troopId);
+    const p = document.getElementById(act.provinceId);
+    if(w && p){
+      aiAwaitingAdvance = true;             // ★ ADD THIS
+      dropTroopOnProvince(w, p, true);
+      return;
+    }
+    advanceRoundState();
+    return;
+}
+  
+if(act.type === 'move'){
+    const w = document.getElementById('tw-' + act.troopId);
+    const p = document.getElementById(act.provinceId);
+
+    if(w && p){
+      // ★ Mark the action committed BEFORE moving — one action per turn.
+      aiAwaitingAdvance = true;
+
+      // ★ 1. Move the primary troop.
+      dropTroopOnProvince(w, p, true);
+
+      // ★ 2. Second-troop follow-up: only for AI-vs-AI attacks.
+      if(act.intent === 'attack'
+         && modeConfig.cao === 'ai' && modeConfig.anti === 'ai'){
+        const myFaction = troopConfig[act.troopId].faction;
+        const buddies = Object.keys(troopState).filter(oid => {
+          if(oid === act.troopId) return false;
+          const ost = troopState[oid];
+          if(!ost || !ost.location || !ost.location.startsWith('region-')) return false;
+          if(ost.hp <= 0) return false;
+          if(troopConfig[oid].faction !== myFaction) return false;
+          const r = computeReachableProvinces(ost.location, myFaction);
+          return r.has(act.provinceId);
+        });
+        if(buddies.length > 0){
+          const follower = buddies[0];
+          const fw = document.getElementById('tw-' + follower);
+          cancelAutoAdvance();
+          pushUndoSnapshot('協同出征');
+          dropTroopOnProvince(fw, p, true);
+        }
+      }
+
+      // If a battle started, resolve it before the turn auto-advances.
+      setTimeout(()=>{
+        if(pendingBattle && modeConfig.cao === 'ai' && modeConfig.anti === 'ai'){
+          resolveBattleAI();
+        }
+      }, 500);
+      return;
+    }
+    advanceRoundState();
+    return;
+}
+  if(act.type === 'moveGroup'){
+    const p = document.getElementById(act.provinceId);
+    if(!p || !Array.isArray(act.troopIds) || act.troopIds.length === 0){
+      advanceRoundState();
+      return;
+    }
+    cancelAutoAdvance();                        // collapse all moves into ONE turn-action
+    pushUndoSnapshot('協同出征');
+    aiAwaitingAdvance = true;
+    for(const tid of act.troopIds){
+      const w = document.getElementById('tw-' + tid);
+      if(!w) continue;
+      if(w.parentElement === p) continue;
+      dropTroopOnProvince(w, p, true);
+    }
+    setTimeout(()=>{
+      if(pendingBattle && modeConfig.cao === 'ai' && modeConfig.anti === 'ai'){
+        resolveBattleAI();
+      }
+    }, 500);
+    scheduleAutoAdvance();                      // re-arm for exactly one round-advance
+    return;
+  }
+  if(act.type === 'laliang'){
+    const piece = act.piece;
+    const destId = act.destId;
+    if(!piece || !destId) { advanceRoundState(); return; }
+    aiAwaitingAdvance = true;                // ★
+    piece.click();
+    setTimeout(()=>{
+      const dest = document.getElementById(destId);
+      if(dest) dest.click();
+      else advanceRoundState();
+    }, 350);
+    return;
+  }
+
+  advanceRoundState();
+}
 /* ==== NEW: base visual scale — internally we zoom 0.7, UI shows 100% ==== */
 const BASE_SCALE = 0.7;
 let displayScale = 1.0;                    // what the user sees (1.0 = 100%)
@@ -1286,9 +2592,167 @@ function applyFallbackScale(gb,v){
   gb.style.marginBottom=((v-1)*gb.offsetHeight)+'px';
 }
 
-function rollDice(el){if(el.dataset.rolling==='true')return;el.dataset.rolling='true';let f=0;const t=5,d=40;function fl(){if(f<t){el.dataset.value=Math.floor(Math.random()*6)+1;f++;setTimeout(fl,d)}else{el.dataset.value=Math.floor(Math.random()*6)+1;el.dataset.rolling='false'}}fl()}
-function rollMultipleDice(c){const d=document.querySelectorAll('.dice');for(let i=0;i<c;i++)if(d[i])rollDice(d[i])}
+/* ══════════════════════════════════════════════════════════════════
+   Semi-random dice system
+   ──────────────────────────────────────────────────────────────────
+   When enabled, each side keeps a "luck debt":
+     • Rolled a 6 (lucky) → debt increases → future rolls biased LOW
+     • Rolled a 1 (unlucky) → debt decreases → future rolls biased HIGH
+   The `strength` slider (default 50) controls how strong the pull-back
+   toward the target average is.
+   ══════════════════════════════════════════════════════════════════ */
+const LUCK_STATE = {
+  cao:  { debt: 0, strength: 50 },
+  anti: { debt: 0, strength: 50 },
+  base: 3.5,
+  enabled: false,
+  activeSide: 'cao'   // ★ which side's luck the button currently targets
+};
 
+/* Return a d6 value — either uniformly random or semi-random adjusted. */
+function getDieRollValue(sideOverride){
+  if(!LUCK_STATE.enabled){
+    return Math.floor(Math.random() * 6) + 1;
+  }
+  const side = sideOverride || LUCK_STATE.activeSide || 'cao';
+  return semiRandomDieRoll(side);
+}
+
+function semiRandomDieRoll(side){
+  if(!LUCK_STATE[side]) LUCK_STATE[side] = { debt:0, strength:50 };
+  const state = LUCK_STATE[side];
+  const base = LUCK_STATE.base;
+  const debt = state.debt || 0;
+  const strength = Math.max(0, Math.min(100, state.strength || 50)) / 100;
+
+  let p = Math.random();
+
+  // Bias direction: positive debt (too lucky so far) → push p toward 0 (lower die)
+  //                 negative debt (too unlucky)      → push p toward 1 (higher die)
+  if(strength > 0 && Math.abs(debt) > 0.01){
+    const bias = Math.tanh(debt / 6);              // (-1, 1)
+    const exponent = 1 + Math.abs(bias) * strength * 2.5;   // 1 .. 3.5
+    if(bias > 0){
+      p = Math.pow(p, exponent);                   // compress toward 0
+    } else {
+      p = 1 - Math.pow(1 - p, exponent);           // compress toward 1
+    }
+  }
+
+  let value = 1 + Math.floor(p * 6);
+  if(value < 1) value = 1;
+  if(value > 6) value = 6;
+
+  // Update debt (leaky so it drifts back to zero over time)
+  state.debt = (debt * 0.6) + (value - base);
+  return value;
+}
+
+/* Toggle helpers */
+function cycleSemiRandomSide(){
+  LUCK_STATE.activeSide = (LUCK_STATE.activeSide === 'cao') ? 'anti' : 'cao';
+  updateSemiRandomUI();
+}
+function toggleSemiRandomEnabled(){
+  LUCK_STATE.enabled = !LUCK_STATE.enabled;
+  updateSemiRandomUI();
+}
+function onSemiRandomCheck(checked){
+  // Legacy alias — kept for safety, forwards to the new toggle logic
+  LUCK_STATE.enabled = !!checked;
+  updateSemiRandomUI();
+}
+function updateSemiRandomUI(){
+  const wrap = document.querySelector('.semirandom-widget');
+  const btn  = document.getElementById('semirandom-btn');
+  const lbl  = document.getElementById('semirandom-side-label');
+  const enBtn = document.getElementById('semirandom-enable');
+  const enLbl = document.getElementById('semirandom-enable-label');
+  const isCao = LUCK_STATE.activeSide === 'cao';
+  if(lbl) lbl.textContent = isCao ? '曹操' : '反曹';
+  if(btn){
+    btn.classList.toggle('side-cao',  isCao);
+    btn.classList.toggle('side-anti', !isCao);
+  }
+  if(wrap){
+    wrap.classList.toggle('active', LUCK_STATE.enabled);
+    wrap.classList.toggle('side-cao',  isCao);
+    wrap.classList.toggle('side-anti', !isCao);
+  }
+  if(enLbl) enLbl.textContent = LUCK_STATE.enabled ? '啟用中' : '啟用';
+}
+/* ★ Consume one activation (like 抗曹's `needs-roll` flag):
+   reads enabled + side, toggles the widget OFF FIRST, then returns captured data. */
+function consumeSemiRandom(){
+  if(!LUCK_STATE.enabled) return null;
+  const side = LUCK_STATE.activeSide || 'cao';
+  LUCK_STATE.enabled = false;
+  updateSemiRandomUI();
+  return { side };
+}
+function resetLuckDebt(){
+  LUCK_STATE.cao.debt = 0;
+  LUCK_STATE.anti.debt = 0;
+}
+function setLuckStrength(side, val){
+  if(!LUCK_STATE[side]) return;
+  const v = Math.max(0, Math.min(100, parseInt(val) || 0));
+  LUCK_STATE[side].strength = v;
+  renderSettings();
+}
+function changeLuckStrength(side, delta){
+  if(!LUCK_STATE[side]) return;
+  LUCK_STATE[side].strength = Math.max(0, Math.min(100, LUCK_STATE[side].strength + delta));
+  renderSettings();
+}
+function setLuckBase(val){
+  const v = parseFloat(val);
+  if(!isNaN(v) && v >= 1 && v <= 6) LUCK_STATE.base = v;
+  renderSettings();
+}
+
+/* ★ rollDice — final value uses semi-random when enabled.
+   One checkbox activation = ONE roll consumed.
+   Batch rolls (擲4 / 抗曹) pre-tag dice with data-semi-side. */
+function rollDice(el){
+  if(el.dataset.rolling === 'true') return;
+  el.dataset.rolling = 'true';
+
+  // Decide which side's luck (if any) applies to this single die roll.
+  let sideToUse = el.dataset.semiSide || null;
+  delete el.dataset.semiSide;
+  if(!sideToUse){
+    const c = consumeSemiRandom();
+    if(c) sideToUse = c.side;
+  }
+
+  let f = 0;
+  const t = 5, d = 40;
+  function fl(){
+    if(f < t){
+      el.dataset.value = Math.floor(Math.random() * 6) + 1;  // visual flicker
+      f++;
+      setTimeout(fl, d);
+    } else {
+      el.dataset.value = sideToUse
+        ? semiRandomDieRoll(sideToUse)                       // ★ semi-random
+        : Math.floor(Math.random() * 6) + 1;                 // ★ plain random
+      el.dataset.rolling = 'false';
+    }
+  }
+  fl();
+}
+function rollMultipleDice(c){
+  // ★ Consume ONE activation for the whole batch
+  const consumed = consumeSemiRandom();
+  const d = document.querySelectorAll('.dice');
+  for(let i = 0; i < c; i++){
+    if(d[i]){
+      if(consumed) d[i].dataset.semiSide = consumed.side;
+      rollDice(d[i]);
+    }
+  }
+}
 /* ==== 抗曹判定: dice → highlight factions → resolve ==== */
 let kangCaoSelectionActive = false;
 
@@ -1298,9 +2762,15 @@ function rollKangCao(){
   // Clear any prior 抗曹 selection so the re-roll starts fresh
   if(selectedPiece){ selectedPiece.classList.remove('highlighted'); selectedPiece = null; }
   clearKangCaoGlowState();
+  // ★ Consume ONE semi-random activation for this 2-die roll
+  const consumed = consumeSemiRandom();
   const d=document.querySelectorAll('.dice');
   const die1=d[0], die2=d[1];
   die1.dataset.rolling='false'; die2.dataset.rolling='false';
+  if(consumed){
+    die1.dataset.semiSide = consumed.side;
+    die2.dataset.semiSide = consumed.side;
+  }
   rollDice(die1); rollDice(die2);
   const btn=document.getElementById('kangcao-btn');
   btn.innerHTML='抗曹<br>判定<br>…';
@@ -1541,6 +3011,8 @@ function changeScore(a){
   if(document.getElementById('auto-vp').checked)return;
   score+=a;if(score<0)score=0;
   document.getElementById('score-display').innerText=score;
+  // ★ NEW: refresh VP danger coloring
+  if(typeof updateVPDangerClasses === 'function') updateVPDangerClasses();
 }
 let isCaoCaoTurn=true;
 
@@ -1789,6 +3261,10 @@ document.addEventListener('mousemove', function(e){
 
 function advanceRoundState(fromAuto){
   if(gameOver) return;
+  aiAwaitingAdvance = false;                  // ★ NEW — AI may fire again
+  if(typeof kangCaoSelectionActive !== 'undefined' && kangCaoSelectionActive){
+    endKangCaoCheck();   // clear stale highlight state before advancing
+  }
   if(!fromAuto) pushUndoSnapshot('回合前進');
   let newRound=false;
   stateIndex++;
@@ -1815,6 +3291,7 @@ function advanceRoundState(fromAuto){
     document.getElementById('kangcao-btn').classList.add('needs-roll');
   }
   scheduleAutoSave();
+  scheduleAICheck();
 }
 
 function endGame(){
@@ -2413,6 +3890,10 @@ function processRecovery(round){
 
 function recalcVP(){
   if(!document.getElementById('auto-vp').checked)return;
+  // ★ NEW: Freeze VP display while a battle is in progress
+  if(typeof pendingBattle !== 'undefined' && pendingBattle){
+    return;
+  }
   let total=0;
   for(const provId in PROVINCE_RESOURCES){
     const prov=document.getElementById(provId);
@@ -2428,6 +3909,23 @@ function recalcVP(){
   // Victory glow when Cao controls ≥ 8
   const box = document.querySelector('.score-box');
   if(box) box.classList.toggle('victory', total >= 8);
+  // ★ NEW: update danger coloring
+  updateVPDangerClasses();
+}
+
+/* ★ NEW: VP danger color classes
+   VP = 6  → vivid red (Cao goes second AND 抗曹 check triggers next round)
+   VP 1–5  → muted red (Cao goes second but no 抗曹 check)
+   other   → normal                                                    */
+function updateVPDangerClasses(){
+  const el = document.getElementById('score-display');
+  if(!el) return;
+  el.classList.remove('vp-danger-mild','vp-danger-extreme');
+  if(score === 6){
+    el.classList.add('vp-danger-extreme');
+  } else if(score >= 1 && score <= 5){
+    el.classList.add('vp-danger-mild');
+  }
 }
 
 let selectedTroops=[];
@@ -2486,8 +3984,11 @@ function handleTroopMouseDown(id,e){
       // Troop on the map: 1-2 step reach
       const reachable = computeReachableProvinces(src, faction);
       renderReachOverlay(src, reachable);
+    } else if (wrapper.classList.contains('in-external')){
+      // 遊戲外部隊 not recruitable → dim everything
+      renderReachOverlay(null, new Set());
     } else {
-      // Pool troop: only own faction's provinces are valid
+      // Available pool troop: only own faction's provinces are valid
       const reachable = computePoolReachableProvinces(faction);
       renderReachOverlay(null, reachable);
     }
@@ -2601,6 +4102,7 @@ function dropTroopOnPool(wrapper){
 function dropTroopOnProvince(wrapper,targetProvince,animate){
   const id=wrapper.dataset.troop;
   if(troopState[id].location==='eliminated')return;
+  if(wrapper.classList.contains('in-external'))return;   // 遊戲外部隊 not recruitable
   const isInPool=wrapper.classList.contains('in-pool');
   const targetId=targetProvince.id;
   const sourceProvince=(!isInPool && wrapper.parentElement) ? wrapper.parentElement.id : null;
@@ -2640,7 +4142,7 @@ function dropTroopOnProvince(wrapper,targetProvince,animate){
   troopState[id].location=targetId;
   if(sourceProvince)layoutRegion(sourceProvince);
   layoutRegion(targetId);
-  recalcVP();
+  // ★ Moved recalcVP to end of function (so pendingBattle is registered first)
   if(animate&&fr){
     const lr=wrapper.getBoundingClientRect();
     const dx=(fr.left-lr.left)/currentScale;
@@ -2668,6 +4170,9 @@ function dropTroopOnProvince(wrapper,targetProvince,animate){
   // Re-check: if this move pulled an invader out of the battle province,
   // or finished the fight, clear pendingBattle and hide the button.
   checkBattleResolution();
+  // ★ NEW: recalcVP now runs after pendingBattle is (possibly) registered.
+  //   If a battle is active, recalcVP() will self-freeze.
+  recalcVP();
 
   scheduleAutoAdvance();
   scheduleAutoSave();
@@ -2888,6 +4393,8 @@ function checkBattleResolution(){
   if (defendersLeft.length === 0 || invadersLeft.length === 0){
     pendingBattle = null;
     hideRetreatButton();
+    // ★ NEW: battle just ended → unfreeze and refresh VP display
+    recalcVP();
   } else {
     showRetreatButton();
   }
@@ -3068,8 +4575,11 @@ function refreshReachOverlayFromSelection(){
     // Troop on map: normal 1-2 step reach
     const reachable = computeReachableProvinces(src, faction);
     renderReachOverlay(src, reachable);
+  } else if (first.classList.contains('in-external')){
+    // 遊戲外部隊 not recruitable → dim everything
+    renderReachOverlay(null, new Set());
   } else {
-    // Pool troop: dim everything not controlled by this faction
+    // Available pool troop: only own faction's provinces are valid
     const reachable = computePoolReachableProvinces(faction);
     renderReachOverlay(null, reachable);
   }
@@ -3149,6 +4659,7 @@ function markGameStarted(){
     activateActions();
   }
   scheduleAutoSave();
+  scheduleAICheck();
 }
 
 /* Lights up possible actions (diplo columns, troops, pools) with green auras */
@@ -3262,6 +4773,9 @@ function performReset(){
   cancelAutoAdvance();
   pendingBattle = null;
   hideRetreatButton();
+  aiRunning = false;
+  // ★ NEW: clear semi-random luck debt
+  if(typeof resetLuckDebt === 'function') resetLuckDebt();
 }
 
 /* ===================== SAVE / LOAD (JSON) ===================== */
@@ -3594,6 +5108,7 @@ function renderSaveTextarea(){
 function openSave(){
   openModal('save-modal');
   renderSaveTextarea();
+  if(typeof refreshBigLogView === 'function') refreshBigLogView();
 }
 
 function openLoad(){
@@ -3832,6 +5347,47 @@ html+='<div class="scale-indicator" style="text-align:center;margin-top:8px">當
   html +=   '</div>';   // close section body
   html += '</div>';     // close settings-section
 
+
+  // ── ★ NEW: Semi-random dice settings ──
+  html+='<h3>半隨機骰子</h3>';
+  html+='<table><thead><tr><th>參數</th><th>值</th><th>操作</th></tr></thead><tbody>';
+  html+=`<tr>
+    <td>啟用狀態</td>
+    <td colspan="2"><b style="color:${LUCK_STATE.enabled?'#44ff88':'#888'};">${LUCK_STATE.enabled?'✅ 已啟用':'⭕ 未啟用'}</b>
+      <span style="color:#888;font-size:11px;margin-left:8px;">（由左側「啟用」按鈕控制）</span></td>
+  </tr>`;
+  html+=`<tr>
+    <td>當前作用方（按鈕切換）</td>
+    <td colspan="2"><b style="color:${LUCK_STATE.activeSide==='cao'?'#6fb6ff':'#ff7b7b'};">${LUCK_STATE.activeSide==='cao'?'🎲 曹操方':'🎲 反曹方'}</b></td>
+  </tr>`;
+  html+=`<tr>
+    <td>曹操方 半隨機強度</td>
+    <td><input type="number" min="0" max="100" value="${LUCK_STATE.cao.strength}" onchange="setLuckStrength('cao',this.value)" style="width:70px"></td>
+    <td><button class="dbg-btn" onclick="changeLuckStrength('cao',-10)">−10</button>
+        <button class="dbg-btn" onclick="changeLuckStrength('cao',10)">+10</button></td>
+  </tr>`;
+  html+=`<tr>
+    <td>反曹方 半隨機強度</td>
+    <td><input type="number" min="0" max="100" value="${LUCK_STATE.anti.strength}" onchange="setLuckStrength('anti',this.value)" style="width:70px"></td>
+    <td><button class="dbg-btn" onclick="changeLuckStrength('anti',-10)">−10</button>
+        <button class="dbg-btn" onclick="changeLuckStrength('anti',10)">+10</button></td>
+  </tr>`;
+  html+=`<tr>
+    <td>基準運氣（目標平均值）</td>
+    <td><input type="number" min="1" max="6" step="0.1" value="${LUCK_STATE.base}" onchange="setLuckBase(this.value)" style="width:70px"></td>
+    <td><span style="color:#888;font-size:11px;">預設 3.5</span></td>
+  </tr>`;
+  html+=`<tr>
+    <td>當前累計運氣差</td>
+    <td colspan="2" style="font-family:monospace;font-size:12px;">
+      曹操方：<b style="color:${LUCK_STATE.cao.debt>0?'#ff8080':'#7cff7c'};">${LUCK_STATE.cao.debt.toFixed(2)}</b>
+      ｜ 反曹方：<b style="color:${LUCK_STATE.anti.debt>0?'#ff8080':'#7cff7c'};">${LUCK_STATE.anti.debt.toFixed(2)}</b>
+      <button class="dbg-btn" onclick="resetLuckDebt();renderSettings();" style="margin-left:8px;">重置運氣</button>
+    </td>
+  </tr>`;
+  html+='</tbody></table>';
+    html+='<p style="font-size:11px;color:#888;line-height:1.6;">💡 半隨機開啟後：擲出 6（失手，戰損判定通常需要骰值 ≤ 戰力）→ 之後傾向擲低（補命中）；擲出 1（必定命中）→ 之後傾向擲高（拉回平均）。<br>強度越高，修正越明顯（0 = 關閉效果，100 = 最強）。<br>🎲 上方按鈕切換曹操方 / 反曹方（各自獨立運氣）；下方「啟用」按鈕開啟後，下一次擲骰會自動消耗此效果。</p>';
+	
   html+='<h3>當前狀態</h3>';
   html+='<div class="kv">';
   html+=`<div class="k">資源點</div><div class="v">${score}</div>`;
@@ -4132,9 +5688,346 @@ document.addEventListener('click', function(e){
   restoreKangCaoGlows();
 });
 
+/* ══════════════════════════════════════════════════════════════════
+   Log wrappers — hook every significant game function
+   ══════════════════════════════════════════════════════════════════ */
+
+/* rollDice — capture the final value */
+(function(){
+  const orig = window.rollDice;
+  window.rollDice = function(el){
+    const idx = Array.from(document.querySelectorAll('.dice')).indexOf(el);
+    orig.apply(this, arguments);
+    const startT = Date.now();
+    const check = setInterval(() => {
+      if(el.dataset.rolling !== 'true'){
+        clearInterval(check);
+        bigLogEvent('dice_roll', {
+          die: idx,
+          value: parseInt(el.dataset.value),
+          all: Array.from(document.querySelectorAll('.dice')).map(d => parseInt(d.dataset.value))
+        });
+      } else if(Date.now() - startT > 5000){ clearInterval(check); }
+    }, 30);
+  };
+})();
+
+/* rollKangCao — log the roll outcome + highlighted targets */
+(function(){
+  const orig = window.rollKangCao;
+  window.rollKangCao = function(){
+    orig.apply(this, arguments);
+    setTimeout(() => {
+      const d = document.querySelectorAll('.dice');
+      const v1 = parseInt(d[0]?.dataset.value) || 1;
+      const v2 = parseInt(d[1]?.dataset.value) || 1;
+      const targets = Array.from(document.querySelectorAll('.kangcao-target')).map(t =>
+        t.classList.contains('troop-wrapper')
+          ? 'troop:' + t.dataset.troop
+          : 'piece:' + getFactionFromPiece(t)
+      );
+      bigLogEvent('kangcao_roll', {
+        dice: [v1, v2],
+        mode: targets.some(t => t.startsWith('troop:')) ? 'zhengzhao'
+            : (targets.length > 0) ? 'laliang' : 'arbitrary',
+        targets
+      });
+    }, 500);
+  };
+})();
+
+/* resolveKangCaoSelection — log the committed choice */
+(function(){
+  const orig = window.resolveKangCaoSelection;
+  window.resolveKangCaoSelection = function(el){
+    const isTroop = el.classList && el.classList.contains('troop-wrapper');
+    const troopId = isTroop ? el.dataset.troop : null;
+    const faction = isTroop ? troopConfig[troopId].faction : getFactionFromPiece(el);
+    const srcContent = el.parentElement && el.parentElement.closest('.diplo-content');
+    const srcId = srcContent ? srcContent.id : null;
+    const r = orig.apply(this, arguments);
+    bigLogEvent('kangcao_commit', { isTroop, troopId, faction, srcContent: srcId });
+    return r;
+  };
+})();
+
+/* handleTargetClick — log 拉攏 */
+(function(){
+  const orig = window.handleTargetClick;
+  window.handleTargetClick = function(id){
+    const piece = (typeof selectedPiece !== 'undefined') ? selectedPiece : null;
+    if(!piece){ return orig.apply(this, arguments); }
+    const faction = getFactionFromPiece(piece);
+    const srcEl = piece.parentElement && piece.parentElement.parentElement;
+    const srcId = srcEl ? srcEl.id : null;
+    const wasKangCao = (typeof kangCaoSelectionActive !== 'undefined') && kangCaoSelectionActive;
+
+    const destEl = document.getElementById(id);
+    const destArea = destEl ? destEl.querySelector('.piece-area') : null;
+    const alreadyThere = destArea && piece.parentElement === destArea;
+    const destFull = destArea && destArea.children.length >= 4;
+
+    const r = orig.apply(this, arguments);
+
+    // Only log when the piece actually changed parent
+    const nowHere = destArea && piece.parentElement === destArea;
+    if(!alreadyThere && !destFull && nowHere){
+      bigLogEvent('piece_move', { faction, srcContent: srcId, destContent: id, duringKangCao: wasKangCao });
+    }
+    return r;
+  };
+})();
+
+/* flipStrategist */
+(function(){
+  const orig = window.flipStrategist;
+  window.flipStrategist = function(el){
+    const name = Array.from(el.querySelectorAll('.strategist-inner span'))
+                     .map(s => s.textContent).join('');
+    const faction = el.dataset.faction;
+    orig.apply(this, arguments);
+    bigLogEvent('strategist_flip', {
+      name, faction,
+      nowFlipped: el.classList.contains('flipped') ? 1 : 0
+    });
+  };
+})();
+
+/* flipEmperor */
+(function(){
+  const orig = window.flipEmperor;
+  window.flipEmperor = function(e){
+    orig.apply(this, arguments);
+    const emp = document.getElementById('emperor-piece');
+    bigLogEvent('emperor_flip', {
+      nowFlipped: emp ? (emp.classList.contains('flipped') ? 1 : 0) : null
+    });
+  };
+})();
+
+/* changeTroopHp */
+(function(){
+  const orig = window.changeTroopHp;
+  window.changeTroopHp = function(id, amount, e){
+    const st = troopState[id];
+    const beforeHp = st ? st.hp : null;
+    const r = orig.apply(this, arguments);
+    const afterHp = st ? st.hp : null;
+    bigLogEvent('troop_hp_change', {
+      troopId: id, faction: troopConfig[id].faction,
+      delta: amount, hpBefore: beforeHp, hpAfter: afterHp,
+      loc: st ? st.location : null
+    });
+    return r;
+  };
+})();
+
+/* dropTroopOnProvince */
+(function(){
+  const orig = window.dropTroopOnProvince;
+  window.dropTroopOnProvince = function(wrapper, targetProvince, animate){
+    const id = wrapper.dataset.troop;
+    const srcLoc = troopState[id] ? troopState[id].location : null;
+    const destLoc = targetProvince.id;
+    const r = orig.apply(this, arguments);
+    bigLogEvent('troop_move', {
+      troopId: id, faction: troopConfig[id].faction,
+      from: srcLoc, to: destLoc, animated: !!animate
+    });
+    return r;
+  };
+})();
+
+/* pool returns */
+['dropTroopOnExternal','dropTroopOnPool'].forEach(fn => {
+  const orig = window[fn];
+  if(typeof orig !== 'function') return;
+  window[fn] = function(wrapper){
+    const id = wrapper.dataset.troop;
+    const r = orig.apply(this, arguments);
+    bigLogEvent('troop_to_pool', {
+      troopId: id, faction: troopConfig[id].faction,
+      pool: (fn === 'dropTroopOnExternal') ? 'external' : 'available'
+    });
+    return r;
+  };
+});
+
+/* moveTroopToRecovery */
+(function(){
+  const orig = window.moveTroopToRecovery;
+  window.moveTroopToRecovery = function(id){
+    const src = troopState[id] ? troopState[id].location : null;
+    const r = orig.apply(this, arguments);
+    bigLogEvent('troop_recovery_start', {
+      troopId: id, faction: troopConfig[id].faction,
+      from: src, recoversRound: Math.min(currentRound + 2, 6)
+    });
+    return r;
+  };
+})();
+
+/* eliminateFaction */
+(function(){
+  const orig = window.eliminateFaction;
+  window.eliminateFaction = function(faction){
+    const r = orig.apply(this, arguments);
+    bigLogEvent('faction_eliminated', { faction });
+    return r;
+  };
+})();
+
+/* advanceRoundState */
+(function(){
+  const orig = window.advanceRoundState;
+  window.advanceRoundState = function(fromAuto){
+    const prevRound = currentRound, prevIdx = stateIndex;
+    const r = orig.apply(this, arguments);
+    bigLogEvent('round_advance', {
+      fromRound: prevRound, toRound: currentRound,
+      fromIdx: prevIdx, toIdx: stateIndex, auto: !!fromAuto
+    });
+    return r;
+  };
+})();
+
+/* recalcVP */
+(function(){
+  const orig = window.recalcVP;
+  window.recalcVP = function(){
+    const before = score;
+    const r = orig.apply(this, arguments);
+    if(before !== score) bigLogEvent('vp_change', { from: before, to: score });
+    return r;
+  };
+})();
+
+/* registerPendingBattle */
+(function(){
+  const orig = window.registerPendingBattle;
+  window.registerPendingBattle = function(targetId, originId, invaderFaction, newIds, defender){
+    const r = orig.apply(this, arguments);
+    bigLogEvent('battle_start', {
+      province: targetId, origin: originId,
+      invaderFaction, invaderIds: newIds.slice(),
+      defenderFaction: defender
+    });
+    return r;
+  };
+})();
+
+/* retreatInvaders */
+(function(){
+  const orig = window.retreatInvaders;
+  window.retreatInvaders = function(e){
+    const ids = pendingBattle ? pendingBattle.invaderIds.slice() : [];
+    const from = pendingBattle ? pendingBattle.targetProvince : null;
+    const to = pendingBattle ? pendingBattle.originProvince : null;
+    const r = orig.apply(this, arguments);
+    bigLogEvent('battle_retreat', { troopIds: ids, from, to });
+    return r;
+  };
+})();
+
+/* resolveBattleAI */
+(function(){
+  const orig = window.resolveBattleAI;
+  if(typeof orig !== 'function') return;
+  window.resolveBattleAI = function(){
+    const start = pendingBattle ? JSON.parse(JSON.stringify(pendingBattle)) : null;
+    const r = orig.apply(this, arguments);
+    bigLogEvent('battle_end', {
+      province: start ? start.targetProvince : null,
+      invaderFaction: start ? start.invaderFaction : null,
+      invaderIds: start ? start.invaderIds : null
+    });
+    return r;
+  };
+})();
+
+/* endGame */
+(function(){
+  const orig = window.endGame;
+  window.endGame = function(){
+    const r = orig.apply(this, arguments);
+    bigLogEvent('game_over', {
+      score, caoWins: score >= 8 ? 1 : 0,
+      snapshot: bigLogSnapshot()
+    });
+    return r;
+  };
+})();
+
+/* markGameStarted */
+(function(){
+  const orig = window.markGameStarted;
+  window.markGameStarted = function(){
+    const wasStarted = (typeof gameStarted === 'boolean') ? gameStarted : false;
+    const r = orig.apply(this, arguments);
+    const nowStarted = (typeof gameStarted === 'boolean') ? gameStarted : false;
+    if(!wasStarted && nowStarted){
+      bigLogEvent('game_start', { snapshot: bigLogSnapshot() });
+    }
+    return r;
+  };
+})();
+
+/* performReset */
+(function(){
+  const orig = window.performReset;
+  window.performReset = function(){
+    bigLogEvent('game_reset', {});
+    const r = orig.apply(this, arguments);
+    bigLogEvent('game_start', { snapshot: bigLogSnapshot() });
+    return r;
+  };
+})();
+
+/* setMode */
+(function(){
+  const orig = window.setMode;
+  window.setMode = function(side, type){
+    const r = orig.apply(this, arguments);
+    bigLogEvent('mode_set', { side, type,
+      modeConfig: JSON.parse(JSON.stringify(modeConfig)) });
+    return r;
+  };
+})();
+
+/* toggleAIPause */
+(function(){
+  const orig = window.toggleAIPause;
+  if(typeof orig !== 'function') return;
+  window.toggleAIPause = function(){
+    const r = orig.apply(this, arguments);
+    bigLogEvent('ai_pause', { paused: aiPaused ? 1 : 0 });
+    return r;
+  };
+})();
+
+/* pickAIActionForSide */
+(function(){
+  const orig = window.pickAIActionForSide;
+  if(typeof orig !== 'function') return;
+  window.pickAIActionForSide = function(side){
+    const r = orig.apply(this, arguments);
+    bigLogEvent('ai_decision', {
+      side, action: r.type,
+      detail: r.type === 'move'    ? { troopId: r.troopId, to: r.provinceId }
+            : r.type === 'deploy'  ? { troopId: r.troopId, to: r.provinceId }
+            : r.type === 'heal'    ? { troopId: r.troopId }
+            : r.type === 'laliang' ? { pieceFaction: getFactionFromPiece(r.piece), to: r.destId }
+            : {}
+    });
+    return r;
+  };
+})();
+
 window.onload=()=>{
   // Apply default scale FIRST (100% = internal zoom 0.7)
   setScale(1.0);
+  if(typeof updateSemiRandomUI === 'function') updateSemiRandomUI();
+  if(typeof updateAIPauseButton === 'function') updateAIPauseButton();
   captureDiploHTML();
   updatePoolToggles();
   setTimeout(updateIndicator,120);
@@ -4155,10 +6048,12 @@ window.addEventListener('resize',updateIndicator);
 (function(){
 'use strict';
 
-if (typeof Peer === 'undefined') {
-    console.error('[net] PeerJS failed to load. Check your internet / CDN.');
-    return;
-}
+window.openOnlineMenu = window.openOnlineMenu || function(){
+    alert('線上功能需要網路連線到 PeerJS CDN，請檢查網路後重試。');
+};
+window.openModeMenu = window.openModeMenu || function(){
+    // ...move the local-only mode menu definition here so it always exists
+};
 
 /* ---------- ICE config (same as card game) ---------- */
 const TURN_URLS = [
@@ -4535,14 +6430,30 @@ window.openOnlineMenu = function(){
 };
 
 window.openModeMenu = function(){
+    const cao = modeConfig.cao;
+    const anti = modeConfig.anti;
+
+    const sideRow = (label, color, key, current) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#222;border:2px solid #444;border-radius:10px;">
+            <span style="color:${color};font-weight:bold;font-size:16px;">${label}</span>
+            <div style="display:flex;gap:8px;">
+                <button onclick="setMode('${key}','human')" style="padding:8px 16px;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:bold;font-size:13px;border:2px solid ${current==='human'?'#44ff88':'#555'};background:${current==='human'?'linear-gradient(180deg,#2a5a2a,#1a3a1a)':'#2a2a2a'};color:${current==='human'?'#d8ffd8':'#888'};">🧑 人類</button>
+                <button onclick="setMode('${key}','ai')" style="padding:8px 16px;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:bold;font-size:13px;border:2px solid ${current==='ai'?'#ffb84d':'#555'};background:${current==='ai'?'linear-gradient(180deg,#5a3a10,#3a2208)':'#2a2a2a'};color:${current==='ai'?'#ffe0b0':'#888'};">🤖 電腦</button>
+            </div>
+        </div>
+    `;
+
     showModal(`
-        <h2 style="color:#FFD700;margin:0 0 14px;">🎮 遊戲模式</h2>
-        <p style="font-size:13px;color:#aaa;line-height:1.8;">下一版（v2.1）會加：<br>
-        🧑‍🤝‍🧑 玩家 vs 玩家（本地）<br>
-        🧑‍💻 玩家 vs AI<br>
-        🤖 AI vs AI</p>
-        <p style="font-size:12px;color:#666;margin-top:10px;">目前請使用原本的「開始」按鈕當作本地對戰。</p>
-        <button onclick="hideOnlineModal()" style="margin-top:12px;padding:8px 20px;background:#444;color:#fff;border:1px solid #666;border-radius:6px;cursor:pointer;font-family:inherit;">關閉</button>
+        <h2 style="color:#FFD700;margin:0 0 6px;">🎮 遊戲模式</h2>
+        <p style="font-size:12px;color:#888;margin-bottom:18px;">選擇每一方的操作者，然後按「開始遊戲」。</p>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+            ${sideRow('曹操方', '#6fb6ff', 'cao', cao)}
+            ${sideRow('反曹方', '#ff7b7b', 'anti', anti)}
+        </div>
+        <div style="margin-top:22px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+            <button onclick="startModeGame()" style="padding:10px 28px;background:linear-gradient(180deg,#c8a040,#8a6020);color:#fff;border:1px solid #FFD700;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:bold;font-size:15px;">▶ 開始遊戲</button>
+            <button onclick="hideOnlineModal()" style="padding:10px 22px;background:#444;color:#ccc;border:1px solid #666;border-radius:8px;cursor:pointer;font-family:inherit;font-size:14px;">關閉</button>
+        </div>
     `);
 };
 
@@ -4771,9 +6682,13 @@ net.setControlMode = setControlMode;
 net.isSharedMode = isSharedMode;
 net.isTurnMode = isTurnMode;
 net.myName = (function(){ try { return localStorage.getItem('caowei_myname') || null; } catch(e){ return null; } })();
-if (!net.myName){
+function ensureName(){
+    if (net.myName) return true;
     const n = prompt('請輸入你的名稱（顯示給對手）:', '玩家');
-    if (n){ net.myName = n.slice(0,12); try{ localStorage.setItem('caowei_myname', net.myName); }catch(e){} }
+    if (!n) return false;
+    net.myName = n.slice(0, 12);
+    try { localStorage.setItem('caowei_myname', net.myName); } catch(e){}
+    return true;
 }
 /* Offer to rejoin if a session was interrupted */
 (function(){
