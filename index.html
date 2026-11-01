@@ -5,6 +5,121 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
 <title>曹魏開國 - 遊戲追蹤器</title>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" defer></script>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     DATA MODULE — every static table used by the game lives here.
+     Nothing in this block depends on the DOM, on runtime state, or on
+     any function defined below. Safe to extract to js/data.js verbatim.
+     ═══════════════════════════════════════════════════════════════════ -->
+<script>
+const CONFIG={kangcaoThreshold:6,autoTurnThreshold:7,maxAntiCao:4};
+const MAX_STAT=7;
+
+const stateSequence=[
+  {num:"3",color:"cao"},{num:"3",color:"anti-cao"},
+  {num:"2",color:"cao"},{num:"2",color:"anti-cao"},
+  {num:"1",color:"cao"},{num:"1",color:"anti-cao"}
+];
+
+const DIPLO_LEVEL={'content-fancao':0,'content-zhongli':1,'content-liancao':2};
+
+const FC={
+  caocao:{o:'#3385ff',i:'#99ddff',b:'#3385ff'},
+  liubei:{o:'#008000',i:'#96b69e',b:'#008000'},
+  liubiao:{o:'#4d0099',i:'#b1aed0',b:'#4d0099'},
+  zhangxiu:{o:'#ff471a',i:'#e4a89b',b:'#ff471a'},
+  yuanshu:{o:'#ffb84d',i:'#ffeb99',b:'#ffb84d'},
+  zhangyang:{o:'#cea67e',i:'#e3ccb5',b:'#cea67e'},
+  lvbu:{o:'#4d4d4d',i:'#e6e6e6',b:'#4d4d4d'}
+};
+
+const PROVINCE_RESOURCES={
+  'region-henei':1,'region-yingchuan':2,'region-chenliu':2,'region-nanyang':1,
+  'region-runan':1,'region-xiangyang':2,'region-anfeng':1,'region-jiyin':1,
+  'region-langya':1,'region-xiapi':2,'region-huainan':2,'region-qiao':1,'region-pei':1
+};
+
+const PROVINCE_POLYGONS = {
+  'region-henei':     [[0,0],[500,0],[400,200],[0,200]],
+  'region-yingchuan': [[0,200],[400,200],[400,450],[0,450]],
+  'region-chenliu':   [[400,200],[500,0],[650,0],[650,450],[400,450]],
+  'region-huainan':   [[850,600],[1200,600],[1200,700],[1450,700],[1450,950],[850,950]],
+  'region-qiao':      [[650,200],[950,200],[950,600],[850,600],[650,450]],
+  'region-pei':       [[950,200],[1200,200],[1200,600],[950,600]],
+  'region-nanyang':   [[0,450],[300,450],[300,700],[0,700]],
+  'region-runan':     [[300,450],[650,450],[850,600],[850,700],[300,700]],
+  'region-xiangyang': [[0,700],[400,700],[400,950],[0,950]],
+  'region-anfeng':    [[400,700],[850,700],[850,950],[400,950]],
+  'region-jiyin':     [[650,0],[1100,0],[1100,200],[650,200]],
+  'region-langya':    [[1100,0],[1450,0],[1450,300],[1200,300],[1200,200],[1100,200]],
+  'region-xiapi':     [[1200,300],[1450,300],[1450,700],[1200,700]]
+};
+
+const PROVINCE_ADJ = {
+  'region-henei':     ['region-yingchuan','region-chenliu'],
+  'region-yingchuan': ['region-henei','region-chenliu','region-nanyang','region-runan'],
+  'region-chenliu':   ['region-henei','region-yingchuan','region-jiyin','region-qiao','region-runan'],
+  'region-jiyin':     ['region-chenliu','region-langya','region-qiao','region-pei'],
+  'region-langya':    ['region-jiyin','region-pei','region-xiapi'],
+  'region-qiao':      ['region-chenliu','region-jiyin','region-pei','region-runan','region-huainan'],
+  'region-pei':       ['region-jiyin','region-langya','region-qiao','region-xiapi','region-huainan'],
+  'region-xiapi':     ['region-langya','region-pei','region-huainan'],
+  'region-nanyang':   ['region-yingchuan','region-runan','region-xiangyang'],
+  'region-runan':     ['region-yingchuan','region-chenliu','region-qiao','region-nanyang','region-xiangyang','region-anfeng','region-huainan'],
+  'region-xiangyang': ['region-nanyang','region-runan','region-anfeng'],
+  'region-anfeng':    ['region-runan','region-xiangyang','region-huainan'],
+  'region-huainan':   ['region-qiao','region-pei','region-xiapi','region-runan','region-anfeng']
+};
+
+const troopConfig={
+  caocao:{name:['曹','操'],maxHp:4,combat:4,startProvince:'region-qiao',faction:'caocao'},
+  xiahoudun:{name:['夏','侯','惇'],maxHp:4,combat:2,startProvince:'region-qiao',faction:'caocao'},
+  yujin:{name:['于','禁'],maxHp:2,combat:3,startProvince:'region-chenliu',faction:'caocao'},
+  caoren:{name:['曹','仁'],maxHp:4,combat:3,startProvince:'region-runan',faction:'caocao'},
+  caohong:{name:['曹','洪'],maxHp:3,combat:2,startProvince:'region-jiyin',faction:'caocao'},
+  dianwei:{name:['典','韋'],maxHp:1,combat:5,startProvince:'region-jiyin',faction:'caocao'},
+  xiahouyuan:{name:['夏','侯','淵'],maxHp:2,combat:3,startProvince:'region-yingchuan',cavalry:true,faction:'caocao'},
+  lejin:{name:['樂','進'],maxHp:2,combat:3,startProvince:'region-yingchuan',faction:'caocao'},
+  xuhuang:{name:['徐','晃'],maxHp:3,combat:3,startProvince:'available',cavalry:true,faction:'caocao'},
+  liubei_troop:{name:['劉','備'],maxHp:3,combat:2,startProvince:'region-pei',faction:'liubei'},
+  guanyu:{name:['關','羽'],maxHp:2,combat:4,startProvince:'region-pei',faction:'liubei'},
+  zhangfei:{name:['張','飛'],maxHp:1,combat:5,startProvince:'region-pei',faction:'liubei'},
+  huangzhong:{name:['黃','忠'],maxHp:2,combat:4,startProvince:'available',faction:'liubiao'},
+  caimao:{name:['蔡','瑁'],maxHp:4,combat:2,startProvince:'region-xiangyang',faction:'liubiao'},
+  huangzhu:{name:['黃','祖'],maxHp:2,combat:4,startProvince:'region-anfeng',faction:'liubiao'},
+  ganning:{name:['甘','寧'],maxHp:3,combat:3,startProvince:'region-anfeng',faction:'liubiao'},
+  zhangxiu_troop:{name:['張','繡'],maxHp:4,combat:3,startProvince:'region-nanyang',faction:'zhangxiu'},
+  hucheer:{name:['胡','車','兒'],maxHp:1,combat:4,startProvince:'region-nanyang',faction:'zhangxiu'},
+  yangfeng:{name:['楊','奉'],maxHp:2,combat:3,startProvince:'available',cavalry:true,faction:'yuanshu'},
+  jiling:{name:['紀','靈'],maxHp:4,combat:2,startProvince:'region-huainan',faction:'yuanshu'},
+  yuanshu_troop:{name:['袁','術'],maxHp:4,combat:2,startProvince:'region-huainan',faction:'yuanshu'},
+  zhangyang_troop:{name:['張','揚'],maxHp:4,combat:2,startProvince:'region-henei',cavalry:true,faction:'zhangyang'},
+  lvbu_troop:{name:['呂','布'],maxHp:2,combat:4,startProvince:'region-xiapi',cavalry:true,faction:'lvbu'},
+  zhangliao:{name:['張','遼'],maxHp:1,combat:5,startProvince:'available',cavalry:true,faction:'lvbu'},
+  gaoshun:{name:['高','順'],maxHp:1,combat:5,startProvince:'region-xiapi',faction:'lvbu'},
+  zangba:{name:['臧','霸'],maxHp:2,combat:2,startProvince:'region-langya',faction:'lvbu'},
+  xuchu:{name:['許','褚'],maxHp:1,combat:5,cost:2,startProvince:'external',faction:'caocao'},
+  mifang:{name:['糜','芳'],maxHp:2,combat:2,cost:1,startProvince:'external',faction:'liubei'},
+  liupan:{name:['劉','磐'],maxHp:1,combat:4,cost:1,startProvince:'external',faction:'liubiao'},
+  wenping:{name:['文','聘'],maxHp:2,combat:3,cost:1,startProvince:'external',faction:'liubiao'},
+  suigu:{name:['眭','固'],maxHp:2,combat:2,cost:1,startProvince:'external',cavalry:true,faction:'zhangyang'}
+};
+
+const troopDefaults={};
+for(const id in troopConfig){
+  const c=troopConfig[id];
+  troopDefaults[id]={maxHp:c.maxHp, combat:c.combat, cavalry:!!c.cavalry};
+}
+
+const FORBIDDEN_RECTS={
+  'region-henei':[{x:380,y:0,w:120,h:200}],
+  'region-chenliu':[{x:0,y:0,w:100,h:200}],
+  'region-qiao':[{x:0,y:250,w:200,h:150}],
+  'region-pei':[{x:150,y:0,w:100,h:100}],
+  'region-huainan':[{x:350,y:0,w:250,h:100}],
+  'region-yingchuan':[{x:0,y:125,w:125,h:125}]
+};
+</script>
 <style>
 :root{
   --cao-color:#3385ff;--cao-light-color:#99ddff;--anti-cao-color:#ff471a;--anti-cao-light-color:#e4a89b;
@@ -127,19 +242,11 @@
   background:linear-gradient(180deg,#1a5a1a,#0e3a0e);
   box-shadow:0 0 14px rgba(68,255,136,.5);
 }
-.semirandom-widget.active .semirandom-enable-btn{
-  border-color:#44ff88;
-  color:#c8ffc8;
-  background:linear-gradient(180deg,#1a5a1a,#0e3a0e);
-  box-shadow:0 0 14px rgba(68,255,136,.5);
-}
 body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background-color:var(--bg-color);display:flex;justify-content:center;align-items:flex-start;min-height:100vh;margin:0;padding:20px;overflow-x:auto}
 .game-board{background:transparent;padding:20px;border-radius:12px;width:100%;max-width:1750px;display:flex;flex-direction:column;gap:50px;position:relative}
 /* ==== top title ==== */
 .game-title-top{display:flex;justify-content:center;align-items:center;width:100%}
 .game-title{font-size:80px;font-weight:bold;color:#fff;margin:0;letter-spacing:4px;white-space:nowrap;line-height:1}
-/* ==== dice-row kept for legacy, unused ==== */
-.dice-row{display:flex;justify-content:flex-start;align-items:center;gap:5px;width:100%;flex-wrap:wrap}
 .dice-group{display:flex;gap:5px}
 .dice{width:var(--dice-size);height:var(--dice-size);border:3px solid var(--gold-color);border-radius:12px;cursor:pointer;background:#000;user-select:none;transition:transform .1s,background .2s,box-shadow .2s;box-shadow:0 4px 6px rgba(0,0,0,.3);position:relative;overflow:hidden}
 .dice:hover{background:#1a1a1a;transform:translateY(-2px);box-shadow:0 6px 12px rgba(255,215,0,.2)}
@@ -327,23 +434,7 @@ body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background-color:var
   align-items:center;
   flex-wrap:wrap;
 }
-.top-settings-buttons{
-  display:flex !important;
-  flex-direction:row !important;
-  gap:5px;
-  align-items:center;
-  flex-wrap:wrap;
-}
 /* ==== NEW: bottom controls row (strategist left, dice right) ==== */
-.bottom-controls-row{
-  display:flex;justify-content:space-between;align-items:center;gap:20px;
-  flex-wrap:wrap;width:100%;margin-top:-45px;
-}
-.bottom-controls-row .strategist-section{margin-top:0}
-.dice-section{
-  display:flex;align-items:center;gap:5px;flex-wrap:wrap;
-  justify-content:flex-end;
-}
 .bottom-controls-row{
   display:flex;justify-content:space-between;align-items:flex-start;gap:20px;
   flex-wrap:wrap;width:100%;margin-top:-45px;
@@ -484,26 +575,6 @@ body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background-color:var
   line-height:1;
   position:relative;
   z-index:2;
-}
-
-/* HP boxes — laid out like the troop-piece's HP indicators */
-.ri-hp{ position:absolute;display:flex;z-index:3; }
-.ri-hp span{
-  display:block;width:9px;height:9px;
-  background-color:#fff;border-radius:2px;
-  box-shadow:0 0 2px rgba(0,0,0,.45);
-}
-.ri-hp.ri-top{
-  top:3px;left:50%;transform:translateX(-50%);
-  flex-direction:row;gap:5px;
-}
-.ri-hp.ri-right{
-  right:3px;top:50%;transform:translateY(-50%);
-  flex-direction:column;gap:5px;
-}
-.ri-hp.ri-bottom{
-  bottom:3px;left:50%;transform:translateX(-50%);
-  flex-direction:row;gap:5px;
 }
 
 /* HP box layer rotates within the tile; positions mirror the troop-piece layout */
@@ -667,7 +738,7 @@ body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background-color:var
   user-select:none;
 }
 .troop-buttons button:hover{background:var(--p-inner,#99ddff);color:#000}
-.troop-buttons button:hover{background:var(--p-inner,#99ddff);color:#000}.troop-badge{color:#fff;font-weight:900;font-size:11px;padding:3px 5px;border-radius:3px;display:inline-flex;flex-direction:column;align-items:center;line-height:1;border:1.5px solid var(--bg-color);user-select:none;pointer-events:none;transition:font-size .2s,padding .2s}
+.troop-badge{color:#fff;font-weight:900;font-size:11px;padding:3px 5px;border-radius:3px;display:inline-flex;flex-direction:column;align-items:center;line-height:1;border:1.5px solid var(--bg-color);user-select:none;pointer-events:none;transition:font-size .2s,padding .2s}
 .troop-badge.count-1{font-size:20px;padding:8px 14px}
 .troop-badge.count-2{font-size:15px;padding:5px 9px}
 .available-pool{background:#2a2a2a;border:3px solid var(--border-color);border-radius:12px;padding:15px 20px;display:flex;align-items:center;gap:20px;min-height:140px;flex-wrap:wrap;margin-top:-45px}
@@ -1760,8 +1831,8 @@ body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background-color:var
 </div>
 
 <script>
-const CONFIG={kangcaoThreshold:6,autoTurnThreshold:7,maxAntiCao:4};
-const MAX_STAT=7;
+/* Static data (CONFIG, MAX_STAT, stateSequence, FC, PROVINCE_*, troopConfig,
+   troopDefaults, FORBIDDEN_RECTS) lives in the DATA <script> block above. */
 
 /* ══════════════════════════════════════════════════════════════════
    BIG LOG — structured event recorder for ML training
@@ -2067,12 +2138,6 @@ function applyAIStrike(attacker){
     });
   }
   return { dice, hits, casualties };
-}
-/* Strategist spend: does this side have an unused strategist that matches
-   the given troop's side? */
-function aiHasStrategistFor(troopEl){
-  const side = aiFactionSide(troopConfig[troopEl.dataset.troop].faction);
-  return aiAvailableStrategistsFor(side).length > 0;
 }
 function aiConsumeStrategistFor(troopEl){
   const side = aiFactionSide(troopConfig[troopEl.dataset.troop].faction);
@@ -2460,6 +2525,97 @@ function aiWouldWinBattle(attackerId, targetId){
     extraEnemies: enemies.length - 1,
     free: false
   };
+}
+
+
+/* Group-attacker version of aiWouldWinBattle. Evaluates whether the combined
+   strike queue of N friendly troops (all in `groupIds`, all able to reach
+   `destId`) can clear the defenders standing in `destId`.
+
+   Mirrors aiWouldWinBattle's EV approximation exactly:
+     • Cavalry strikes before infantry
+     • Within a side, units are ordered by current EV (hp × combat), highest first
+     • Each unit contributes round(hp × combat / 6) damage pips in queue order
+     • A unit killed before its turn contributes zero
+   The only difference from aiWouldWinBattle is that attackers is a list
+   instead of a single unit. */
+function aiWouldWinBattleGroup(groupIds, destId){
+  const targetEl = document.getElementById(destId);
+  if(!targetEl) return null;
+
+  const attackers = [];
+  for(const tid of groupIds){
+    const st = troopState[tid];
+    const cfg = troopConfig[tid];
+    if(!st || !cfg || st.hp <= 0) continue;
+    attackers.push({ id:tid, hp:st.hp, cb:cfg.combat, cav:!!cfg.cavalry,
+                     faction:cfg.faction });
+  }
+  if(attackers.length === 0) return null;
+
+  const myFac = attackers[0].faction;
+  const defenders = [];
+  Array.from(targetEl.querySelectorAll('.troop-wrapper')).forEach(w => {
+    if(w.classList.contains('in-pool')) return;
+    if(w.style.display === 'none') return;
+    const tid = w.dataset.troop;
+    const st = troopState[tid];
+    const cfg = troopConfig[tid];
+    if(!st || !cfg || st.hp <= 0) return;
+    if(st.location !== destId) return;
+    if(cfg.faction === myFac || isAllyOf(myFac, cfg.faction)) return;
+    defenders.push({ id:tid, hp:st.hp, cb:cfg.combat, cav:!!cfg.cavalry });
+  });
+
+  if(defenders.length === 0){
+    return { win:true, margin:1000, ourRemain:attackers.length,
+             theirRemain:0, free:true };
+  }
+
+  const sortEV = arr => arr.slice().sort((x, y) => (y.hp * y.cb) - (x.hp * x.cb));
+  const dCav = sortEV(defenders.filter(u => u.cav));
+  const aCav = sortEV(attackers.filter(u => u.cav));
+  const dInf = sortEV(defenders.filter(u => !u.cav));
+  const aInf = sortEV(attackers.filter(u => !u.cav));
+
+  const queue = [];
+  let ii = 0, jj = 0;
+  while(ii < dCav.length || jj < aCav.length){
+    if(ii < dCav.length) queue.push({ u:dCav[ii++], side:'D' });
+    if(jj < aCav.length) queue.push({ u:aCav[jj++], side:'A' });
+  }
+  ii = 0; jj = 0;
+  while(ii < dInf.length || jj < aInf.length){
+    if(ii < dInf.length) queue.push({ u:dInf[ii++], side:'D' });
+    if(jj < aInf.length) queue.push({ u:aInf[jj++], side:'A' });
+  }
+
+  const hp = {};
+  attackers.forEach(u => { hp[u.id] = u.hp; });
+  defenders.forEach(u => { hp[u.id] = u.hp; });
+
+  for(const entry of queue){
+    if(hp[entry.u.id] <= 0) continue;
+    const list = (entry.side === 'A') ? defenders : attackers;
+    let pips = Math.round(hp[entry.u.id] * entry.u.cb / 6);
+    while(pips-- > 0){
+      let best = null, bestHp = -1;
+      for(const e of list){
+        if(hp[e.id] > bestHp){ bestHp = hp[e.id]; best = e; }
+      }
+      if(!best || bestHp <= 0) break;
+      hp[best.id] = Math.max(0, hp[best.id] - 1);
+    }
+  }
+
+  const atkAlive = attackers.some(u => hp[u.id] > 0);
+  const defAlive = defenders.some(u => hp[u.id] > 0);
+  const win = atkAlive && !defAlive;
+  const ourRemain   = attackers.filter(u => hp[u.id] > 0).length;
+  const theirRemain = defenders.filter(u => hp[u.id] > 0).length;
+  const margin = win ? ourRemain : -theirRemain;
+
+  return { win, margin, ourRemain, theirRemain, free:false };
 }
 
 function pickAIActionForSide(side){
@@ -3078,11 +3234,6 @@ function toggleSemiRandomEnabled(){
   LUCK_STATE.enabled = !LUCK_STATE.enabled;
   updateSemiRandomUI();
 }
-function onSemiRandomCheck(checked){
-  // Legacy alias — kept for safety, forwards to the new toggle logic
-  LUCK_STATE.enabled = !!checked;
-  updateSemiRandomUI();
-}
 function updateSemiRandomUI(){
   const wrap = document.querySelector('.semirandom-widget');
   const btn  = document.getElementById('semirandom-btn');
@@ -3621,7 +3772,6 @@ function updatePoolToggles(){
   });
 }
 
-const stateSequence=[{num:"3",color:"cao"},{num:"3",color:"anti-cao"},{num:"2",color:"cao"},{num:"2",color:"anti-cao"},{num:"1",color:"cao"},{num:"1",color:"anti-cao"}];
 let currentRound=1;let stateIndex=0;
 
 /* ==== NEW: auto-advance the round indicator when a real map action happens ====
@@ -3878,7 +4028,6 @@ function checkEmperorFlipOnTroopMove(faction){
   if(!isFactionAlliedToCao(faction))return;
   flipEmperorToBack();
 }
-const DIPLO_LEVEL={'content-fancao':0,'content-zhongli':1,'content-liancao':2};
 function checkEmperorFlipOnDiploMove(srcId,destId,wasFlipped){
   if(!isCaoCaoTurn)return;
   if(!wasFlipped)return;
@@ -4069,70 +4218,8 @@ function restoreDiploHTML(){
   updateDiploHeights();
 }
 
-const FC={
-  caocao:{o:'#3385ff',i:'#99ddff',b:'#3385ff'},
-  liubei:{o:'#008000',i:'#96b69e',b:'#008000'},
-  liubiao:{o:'#4d0099',i:'#b1aed0',b:'#4d0099'},
-  zhangxiu:{o:'#ff471a',i:'#e4a89b',b:'#ff471a'},
-  yuanshu:{o:'#ffb84d',i:'#ffeb99',b:'#ffb84d'},
-  zhangyang:{o:'#cea67e',i:'#e3ccb5',b:'#cea67e'},
-  lvbu:{o:'#4d4d4d',i:'#e6e6e6',b:'#4d4d4d'}
-};
-
-const PROVINCE_RESOURCES={
-  'region-henei':1,'region-yingchuan':2,'region-chenliu':2,'region-nanyang':1,
-  'region-runan':1,'region-xiangyang':2,'region-anfeng':1,'region-jiyin':1,
-  'region-langya':1,'region-xiapi':2,'region-huainan':2,'region-qiao':1,'region-pei':1
-};
-
-const troopConfig={
-  caocao:{name:['曹','操'],maxHp:4,combat:4,startProvince:'region-qiao',faction:'caocao'},
-  xiahoudun:{name:['夏','侯','惇'],maxHp:4,combat:2,startProvince:'region-qiao',faction:'caocao'},
-  yujin:{name:['于','禁'],maxHp:2,combat:3,startProvince:'region-chenliu',faction:'caocao'},
-  caoren:{name:['曹','仁'],maxHp:4,combat:3,startProvince:'region-runan',faction:'caocao'},
-  caohong:{name:['曹','洪'],maxHp:3,combat:2,startProvince:'region-jiyin',faction:'caocao'},
-  dianwei:{name:['典','韋'],maxHp:1,combat:5,startProvince:'region-jiyin',faction:'caocao'},
-  xiahouyuan:{name:['夏','侯','淵'],maxHp:2,combat:3,startProvince:'region-yingchuan',cavalry:true,faction:'caocao'},
-  lejin:{name:['樂','進'],maxHp:2,combat:3,startProvince:'region-yingchuan',faction:'caocao'},
-  xuhuang:{name:['徐','晃'],maxHp:3,combat:3,startProvince:'available',cavalry:true,faction:'caocao'},
-  liubei_troop:{name:['劉','備'],maxHp:3,combat:2,startProvince:'region-pei',faction:'liubei'},
-  guanyu:{name:['關','羽'],maxHp:2,combat:4,startProvince:'region-pei',faction:'liubei'},
-  zhangfei:{name:['張','飛'],maxHp:1,combat:5,startProvince:'region-pei',faction:'liubei'},
-  huangzhong:{name:['黃','忠'],maxHp:2,combat:4,startProvince:'available',faction:'liubiao'},
-  caimao:{name:['蔡','瑁'],maxHp:4,combat:2,startProvince:'region-xiangyang',faction:'liubiao'},
-  huangzhu:{name:['黃','祖'],maxHp:2,combat:4,startProvince:'region-anfeng',faction:'liubiao'},
-  ganning:{name:['甘','寧'],maxHp:3,combat:3,startProvince:'region-anfeng',faction:'liubiao'},
-  zhangxiu_troop:{name:['張','繡'],maxHp:4,combat:3,startProvince:'region-nanyang',faction:'zhangxiu'},
-  hucheer:{name:['胡','車','兒'],maxHp:1,combat:4,startProvince:'region-nanyang',faction:'zhangxiu'},
-  yangfeng:{name:['楊','奉'],maxHp:2,combat:3,startProvince:'available',cavalry:true,faction:'yuanshu'},
-  jiling:{name:['紀','靈'],maxHp:4,combat:2,startProvince:'region-huainan',faction:'yuanshu'},
-  yuanshu_troop:{name:['袁','術'],maxHp:4,combat:2,startProvince:'region-huainan',faction:'yuanshu'},
-  zhangyang_troop:{name:['張','揚'],maxHp:4,combat:2,startProvince:'region-henei',cavalry:true,faction:'zhangyang'},
-  lvbu_troop:{name:['呂','布'],maxHp:2,combat:4,startProvince:'region-xiapi',cavalry:true,faction:'lvbu'},
-  zhangliao:{name:['張','遼'],maxHp:1,combat:5,startProvince:'available',cavalry:true,faction:'lvbu'},
-  gaoshun:{name:['高','順'],maxHp:1,combat:5,startProvince:'region-xiapi',faction:'lvbu'},
-  zangba:{name:['臧','霸'],maxHp:2,combat:2,startProvince:'region-langya',faction:'lvbu'},
-  xuchu:{name:['許','褚'],maxHp:1,combat:5,cost:2,startProvince:'external',faction:'caocao'},
-  mifang:{name:['糜','芳'],maxHp:2,combat:2,cost:1,startProvince:'external',faction:'liubei'},
-  liupan:{name:['劉','磐'],maxHp:1,combat:4,cost:1,startProvince:'external',faction:'liubiao'},
-  wenping:{name:['文','聘'],maxHp:2,combat:3,cost:1,startProvince:'external',faction:'liubiao'},
-  suigu:{name:['眭','固'],maxHp:2,combat:2,cost:1,startProvince:'external',cavalry:true,faction:'zhangyang'}
-};
 const troopState={};
-const troopDefaults={};
-for(const id in troopConfig){
-  const c=troopConfig[id];
-  troopDefaults[id]={maxHp:c.maxHp, combat:c.combat, cavalry:!!c.cavalry};
-}
 
-const FORBIDDEN_RECTS={
-  'region-henei':[{x:380,y:0,w:120,h:200}],
-  'region-chenliu':[{x:0,y:0,w:100,h:200}],
-  'region-qiao':[{x:0,y:250,w:200,h:150}],
-  'region-pei':[{x:150,y:0,w:100,h:100}],
-  'region-huainan':[{x:350,y:0,w:250,h:100}],
-  'region-yingchuan':[{x:0,y:125,w:125,h:125}]
-};
 const OVERFLOW_ALLOWED=30;
 let TS=110, GAP_X=28, GAP_Y=12;
 let BTN_OFFSET_X=2, BTN_W=24, BTN_OFFSET_Y=33, BTN_H=44;
@@ -4717,21 +4804,6 @@ function dropTroopOnProvince(wrapper,targetProvince,animate){
    clicks near the diagonal edges (河內/陳留, 譙/汝南) go to the
    correct region. Order matches DOM so later = on-top.
    ══════════════════════════════════════════════════════════════════ */
-const PROVINCE_POLYGONS = {
-    'region-henei':     [[0,0],[500,0],[400,200],[0,200]],
-    'region-yingchuan': [[0,200],[400,200],[400,450],[0,450]],
-    'region-chenliu':   [[400,200],[500,0],[650,0],[650,450],[400,450]],
-    'region-huainan':   [[850,600],[1200,600],[1200,700],[1450,700],[1450,950],[850,950]],
-    'region-qiao':      [[650,200],[950,200],[950,600],[850,600],[650,450]],
-    'region-pei':       [[950,200],[1200,200],[1200,600],[950,600]],
-    'region-nanyang':   [[0,450],[300,450],[300,700],[0,700]],
-    'region-runan':     [[300,450],[650,450],[850,600],[850,700],[300,700]],
-    'region-xiangyang': [[0,700],[400,700],[400,950],[0,950]],
-    'region-anfeng':    [[400,700],[850,700],[850,950],[400,950]],
-    'region-jiyin':     [[650,0],[1100,0],[1100,200],[650,200]],
-    'region-langya':    [[1100,0],[1450,0],[1450,300],[1200,300],[1200,200],[1100,200]],
-    'region-xiapi':     [[1200,300],[1450,300],[1450,700],[1200,700]]
-};
 
 function pointInPolygon(x, y, poly){
     let inside = false;
@@ -4971,40 +5043,6 @@ function handleProvinceClick(provinceId,e){
    ── 2 steps: mid province must be empty / same faction / ally
    ══════════════════════════════════════════════════════════════════ */
 
-/* Province adjacency graph (edges match the visible map) */
-const PROVINCE_ADJ = {
-  'region-henei':     ['region-yingchuan','region-chenliu'],
-  'region-yingchuan': ['region-henei','region-chenliu','region-nanyang','region-runan'],
-  'region-chenliu':   ['region-henei','region-yingchuan','region-jiyin','region-qiao','region-runan'],
-  'region-jiyin':     ['region-chenliu','region-langya','region-qiao','region-pei'],
-  'region-langya':    ['region-jiyin','region-pei','region-xiapi'],
-  'region-qiao':      ['region-chenliu','region-jiyin','region-pei','region-runan','region-huainan'],
-  'region-pei':       ['region-jiyin','region-langya','region-qiao','region-xiapi','region-huainan'],
-  'region-xiapi':     ['region-langya','region-pei','region-huainan'],
-  'region-nanyang':   ['region-yingchuan','region-runan','region-xiangyang'],
-  'region-runan':     ['region-yingchuan','region-chenliu','region-qiao','region-nanyang','region-xiangyang','region-anfeng','region-huainan'],
-  'region-xiangyang': ['region-nanyang','region-runan','region-anfeng'],
-  'region-anfeng':    ['region-runan','region-xiangyang','region-huainan'],
-  'region-huainan':   ['region-qiao','region-pei','region-xiapi','region-runan','region-anfeng']
-};
-
-/* Polygon points for the dim overlay (must match the border SVG) */
-const PROVINCE_POLY_POINTS = {
-  'region-henei':     '0,0 500,0 400,200 0,200',
-  'region-yingchuan': '0,200 400,200 400,450 0,450',
-  'region-chenliu':   '400,200 500,0 650,0 650,450 400,450',
-  'region-jiyin':     '650,0 1100,0 1100,200 650,200',
-  'region-langya':    '1100,0 1450,0 1450,300 1200,300 1200,200 1100,200',
-  'region-qiao':      '650,200 950,200 950,600 850,600 650,450',
-  'region-pei':       '950,200 1200,200 1200,600 950,600',
-  'region-xiapi':     '1200,300 1450,300 1450,700 1200,700',
-  'region-nanyang':   '0,450 300,450 300,700 0,700',
-  'region-runan':     '300,450 650,450 850,600 850,700 300,700',
-  'region-xiangyang': '0,700 400,700 400,950 0,950',
-  'region-anfeng':    '400,700 850,700 850,950 400,950',
-  'region-huainan':   '850,600 1200,600 1200,700 1450,700 1450,950 850,950'
-};
-
 /* Who controls a province? Returns faction id or null if empty. */
 function getProvinceController(provinceId){
   const prov = document.getElementById(provinceId);
@@ -5091,11 +5129,11 @@ function renderReachOverlay(srcId, reachableSet){
   if (!svg) return;
   svg.innerHTML = '';
   const ns = 'http://www.w3.org/2000/svg';
-  Object.keys(PROVINCE_POLY_POINTS).forEach(id => {
+  Object.keys(PROVINCE_POLYGONS).forEach(id => {
     if (id === srcId) return;                  // source itself: no dim
     if (reachableSet.has(id)) return;          // reachable: no dim
     const poly = document.createElementNS(ns, 'polygon');
-    poly.setAttribute('points', PROVINCE_POLY_POINTS[id]);
+    poly.setAttribute('points', PROVINCE_POLYGONS[id].map(p => p.join(',')).join(' '));
     poly.setAttribute('fill', 'rgba(0,0,0,.32)');
     poly.setAttribute('pointer-events', 'none');
     svg.appendChild(poly);
@@ -5121,19 +5159,6 @@ function refreshReachOverlayFromSelection(){
     const reachable = computePoolReachableProvinces(faction);
     renderReachOverlay(null, reachable);
   }
-}
-
-/* Small visual feedback when a drop is rejected. */
-function flashReachReject(){
-  const mb = document.querySelector('.map-box');
-  if (!mb) return;
-  const savedShadow = mb.style.boxShadow;
-  mb.style.transition = 'box-shadow .12s';
-  mb.style.boxShadow = '0 0 0 4px rgba(255,71,26,.85), inset 0 0 40px rgba(90,60,20,.12)';
-  setTimeout(() => {
-    mb.style.boxShadow = savedShadow || 'inset 0 0 40px rgba(90,60,20,.12)';
-    setTimeout(() => { mb.style.transition = ''; }, 260);
-  }, 200);
 }
 
 /* ==== NEW: Undo system ==== */
@@ -5594,7 +5619,38 @@ function applyGameState(state){
   updateRecoveryBadgeSizes();
     if(state._dice && state._dice.length){
     const dice=document.querySelectorAll('.dice');
-    state._dice.forEach((d,i)=>{ if(dice[i]){ dice[i].dataset.value=d.value; if(d.rolling) dice[i].dataset.rolling='true'; else dice[i].removeAttribute('data-rolling'); } });
+    state._dice.forEach((d,i)=>{
+      if(!dice[i]) return;
+      const die = dice[i];
+      if (window.__net && window.__net.applyingRemote){
+        /* ★ Remote update — play/extend a longer local flicker so the
+              host's authoritative value has time to arrive, then settle
+              on it instead of the intermediate random value. */
+        if (d.rolling){
+          if (typeof window.startRemoteDiceFlicker === 'function'){
+            window.startRemoteDiceFlicker(die);
+          } else {
+            die.dataset.value = d.value;
+            die.dataset.rolling = 'true';
+          }
+        } else if (die.dataset.remoteRolling === 'true'){
+          if (d.value !== undefined) die.dataset.remoteFinal = String(d.value);
+        } else if (die.dataset.value !== String(d.value)){
+          if (typeof window.startRemoteDiceFlicker === 'function'){
+            window.startRemoteDiceFlicker(die, d.value);
+          } else {
+            die.dataset.value = d.value;
+            die.removeAttribute('data-rolling');
+          }
+        } else {
+          die.removeAttribute('data-rolling');
+        }
+      } else {
+        die.dataset.value = d.value;
+        if (d.rolling) die.dataset.rolling = 'true';
+        else die.removeAttribute('data-rolling');
+      }
+    });
   }
   if(state._kangcaoActive!==undefined) kangCaoSelectionActive = state._kangcaoActive;
   if(state._gameStarted!==undefined){ gameStarted = state._gameStarted; const rb=document.getElementById('reset-btn'); if(rb){ if(gameStarted){ rb.textContent='重置'; rb.classList.remove('start-btn','confirm'); } else { rb.textContent='開始'; rb.classList.add('start-btn'); rb.classList.remove('confirm'); } } }
@@ -6396,6 +6452,13 @@ document.addEventListener('click', function(e){
           value: parseInt(el.dataset.value),
           all: Array.from(document.querySelectorAll('.dice')).map(d => parseInt(d.dataset.value))
         });
+        /* ★ Broadcast the SETTLED value so remote peers show the same result.
+              (Without this, the host only broadcasts at roll-start and the
+              guest is stuck on the intermediate flicker value forever.) */
+        if (window.__net && window.__net.isHost
+            && typeof window.__net.scheduleBroadcast === 'function') {
+          window.__net.scheduleBroadcast();
+        }
       } else if(Date.now() - startT > 5000){ clearInterval(check); }
     }, 30);
   };
@@ -6954,67 +7017,6 @@ function refreshRoundBarClone(){
     });
 })();
 
-/* Copies visual state from the live originals into the clone. */
-function refreshRoundBarClone(){
-  if(!roundBarVisible || !_roundBarEl) return;
-  const clone = _roundBarEl.querySelector('.left-status-group');
-  if(!clone) return;
-
-  /* turn-box colour / disabled ring */
-  const origTurn  = document.getElementById('turn-box');
-  const cloneTurn = clone.querySelector('.turn-box');
-  if(origTurn && cloneTurn){
-    cloneTurn.classList.toggle('cao',           origTurn.classList.contains('cao'));
-    cloneTurn.classList.toggle('anti-cao',      origTurn.classList.contains('anti-cao'));
-    cloneTurn.classList.toggle('auto-disabled', origTurn.classList.contains('auto-disabled'));
-  }
-
-  /* score text + danger / victory classes */
-  const origScore  = document.getElementById('score-display');
-  const cloneScore = clone.querySelector('.vp-middle > span');
-  if(origScore && cloneScore){
-    cloneScore.textContent = origScore.textContent;
-    cloneScore.className   = origScore.className;
-  }
-
-  /* checkbox states */
-  const origAutoTurn = document.getElementById('auto-turn');
-  const origAutoVp   = document.getElementById('auto-vp');
-  const cloneChecks  = clone.querySelectorAll('.auto-check input');
-  if(cloneChecks[0] && origAutoTurn) cloneChecks[0].checked = origAutoTurn.checked;
-  if(cloneChecks[1] && origAutoVp)   cloneChecks[1].checked = origAutoVp.checked;
-
-  /* +/− disabled state on the score box */
-  const cloneButtons = clone.querySelectorAll('.score-box button');
-  if(cloneButtons.length >= 2 && origAutoVp){
-    cloneButtons[0].disabled = origAutoVp.checked;
-    cloneButtons[1].disabled = origAutoVp.checked;
-  }
-
-  /* victory glow */
-  const origScoreBox  = document.querySelector('.score-box');
-  const cloneScoreBox = clone.querySelector('.score-box');
-  if(origScoreBox && cloneScoreBox){
-    cloneScoreBox.classList.toggle('victory', origScoreBox.classList.contains('victory'));
-  }
-}
-
-/* Auto-sync the clone whenever the real state changes.  Every one of these
-   functions is called at the end of any state mutation, so this catches
-   every path — even ones the network patch calls remotely. */
-(function(){
-  ['toggleTurn','applyTurnVisual','updateAutoStates','recalcVP','changeScore']
-    .forEach(name => {
-      const orig = window[name];
-      if(typeof orig !== 'function') return;
-      window[name] = function(){
-        const r = orig.apply(this, arguments);
-        try { refreshRoundBarClone(); } catch(e){}
-        return r;
-      };
-    });
-})();
-
 window.onload=()=>{
   // Apply default scale FIRST (100% = internal zoom 0.7)
   setScale(1.0);
@@ -7090,7 +7092,7 @@ const net = {
     roomCode: null, myName: null, remoteName: null,
     broadcastTimer: null, broadcastDelay: 60,
     _suppressBroadcast: false,
-    debug: true,
+    debug: false,
     _seq: 0, _pending: new Map(),
 
     // ★ NEW: control mode — 'shared' (both can act anytime) or 'turn' (only active side)
@@ -7682,15 +7684,70 @@ net.leave = function(){
     net.isHost = net.isGuest = false;
     net.roomCode = net.remoteName = null;
     _lastKangcaoSig = '';
+    net._pending.clear();	
     try { sessionStorage.removeItem('caowei_net'); } catch(e){}	
     hideModal();
 };
 
 /* ---------- player name ---------- */
-/* ★ NEW: expose the control-mode setter on the net object */
-net.setControlMode = setControlMode;
-net.isSharedMode = isSharedMode;
-net.isTurnMode = isTurnMode;
+
+/* ══════════════════════════════════════════════════════════════════
+   ★ Remote dice-roll animation
+   ──────────────────────────────────────────────────────────────────
+   When a state update arrives showing a die mid-roll, we start a
+   LOCAL flicker here. The flicker keeps going until either:
+     • the host's settled value arrives (buffered in dataset.remoteFinal), or
+     • MAX_DURATION elapses (safety net).
+   MIN_DURATION guarantees the animation is visibly LONGER than the
+   host's ~200ms roll, so the viewer actually perceives the roll.
+   ══════════════════════════════════════════════════════════════════ */
+window.startRemoteDiceFlicker = function(el, finalValue){
+  if (!el || !el.dataset) return;
+
+  if (el.dataset.remoteRolling === 'true'){
+    /* Already animating — just record the newly-arrived final value. */
+    if (finalValue !== undefined) el.dataset.remoteFinal = String(finalValue);
+    return;
+  }
+
+  el.dataset.remoteRolling = 'true';
+  el.dataset.rolling = 'true';
+  if (finalValue !== undefined) el.dataset.remoteFinal = String(finalValue);
+  else delete el.dataset.remoteFinal;
+
+  const start       = Date.now();
+  const MAX_DURATION = 2500;   /* absolute cap for a stuck/missing final value */
+  const MIN_DURATION = 400;    /* floor — keeps the remote animation longer than host's */
+  const FLICKER_MS   = 60;
+
+  const timer = setInterval(() => {
+    const elapsed = Date.now() - start;
+
+    /* Final value received AND minimum visible time satisfied → settle */
+    if (el.dataset.remoteFinal !== undefined
+        && el.dataset.remoteFinal !== ''
+        && elapsed >= MIN_DURATION){
+      clearInterval(timer);
+      el.dataset.value = el.dataset.remoteFinal;
+      el.dataset.rolling = 'false';
+      delete el.dataset.remoteRolling;
+      delete el.dataset.remoteFinal;
+      return;
+    }
+
+    /* Safety net — stop flickering if the final value never arrives */
+    if (elapsed > MAX_DURATION){
+      clearInterval(timer);
+      el.dataset.rolling = 'false';
+      delete el.dataset.remoteRolling;
+      delete el.dataset.remoteFinal;
+      return;
+    }
+
+    /* Keep flickering */
+    el.dataset.value = Math.floor(Math.random() * 6) + 1;
+  }, FLICKER_MS);
+};
 net.myName = (function(){ try { return localStorage.getItem('caowei_myname') || null; } catch(e){ return null; } })();
 function ensureName(){
     if (net.myName) return true;
