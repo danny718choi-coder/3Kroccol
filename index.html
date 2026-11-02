@@ -7318,6 +7318,12 @@ const NET_ACTIONS = [
     'toggleTurn','advanceRoundState','changeScore',
     'rollDice','rollMultipleDice','rollKangCao',
     'handleProvinceClick','handleTargetClick','handlePieceClick',
+    /* ★ `handleTroopClick` MUST be relayed, otherwise the guest's click
+         only mutates its own `selectedTroops`. When the guest then clicks
+         a province, `handleProvinceClick` runs on the HOST where
+         `selectedTroops` is still empty → the move is silently ignored.
+         Relaying it keeps the selection state on the authoritative side. */
+    'handleTroopClick',
     'flipStrategist','flipEmperor',
     'changeTroopHp',
     'dropTroopOnProvince','dropTroopOnExternal','dropTroopOnPool',
