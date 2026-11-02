@@ -7325,11 +7325,36 @@ const NET_ACTIONS = [
     'retreatInvaders'    // ★
 ];
 
+/* ★ Actions that are "local selection" — the guest must ALSO run them locally,
+     otherwise:
+       (a) the guest sees no immediate feedback, and
+       (b) the original's `e.stopPropagation()` never runs, so the click
+           bubbles up to the parent province / column handler. That parent
+           handler fires a second relayed action which immediately CLEARS
+           the just-made selection (this was the "visitor can't select" bug).
+     Running the original locally fixes both, and state sync afterwards
+     reconciles any divergence. */
+const GUEST_LOCAL_ACTIONS = new Set(['handleTroopClick','handlePieceClick']);
+
 NET_ACTIONS.forEach(name=>{
     const orig = window[name];
     if (typeof orig !== 'function') { console.warn('[net] missing action:', name); return; }
     window[name] = function(...args){
         if (net.isGuest && !net.applyingRemote){
+            if (GUEST_LOCAL_ACTIONS.has(name)){
+                /* Run locally first — instant visual feedback +
+                   stopPropagation fires so no parent handler double-fires. */
+                try { orig.apply(this, args); }
+                catch(e){ console.warn('[net] local apply failed (' + name + '):', e); }
+            } else {
+                /* Still stop bubbling for non-local actions — a troop click
+                   must not also trigger the province click handler. */
+                for (const arg of args){
+                    if (arg && typeof arg === 'object' && typeof arg.stopPropagation === 'function'){
+                        try { arg.stopPropagation(); } catch(e){}
+                    }
+                }
+            }
             net.sendAction(name, args);
             return;
         }
