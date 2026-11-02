@@ -5662,7 +5662,7 @@ function applyGameState(state){
       const el = document.querySelector('.chess-piece.piece-' + state._selPieceFaction);
       if (el) { selectedPiece = el; el.classList.add('highlighted'); }
   } else { selectedPiece = null; }
-  if (Array.isArray(state._selTroopIds)) {
+if (Array.isArray(state._selTroopIds)) {
       selectedTroops = state._selTroopIds
           .map(id => document.getElementById('tw-' + id))
           .filter(Boolean);
@@ -5670,7 +5670,21 @@ function applyGameState(state){
           const pc = w.querySelector('.troop-piece');
           if (pc) pc.classList.add('highlighted');
       });
-  } else { selectedTroops = []; }
+      /* ★ Rebuild the dim reach overlay on the remote side.
+            The host rendered it locally before broadcasting, but the guest
+            receives only state — so without this, the guest sees the
+            yellow selection ring but not which provinces are valid drops. */
+      if (selectedTroops.length && typeof refreshReachOverlayFromSelection === 'function') {
+          try { refreshReachOverlayFromSelection(); } catch(e){}
+      } else if (typeof clearReachOverlay === 'function') {
+          try { clearReachOverlay(); } catch(e){}
+      }
+  } else {
+      selectedTroops = [];
+      if (typeof clearReachOverlay === 'function') {
+          try { clearReachOverlay(); } catch(e){}
+      }
+  }
   if (state._kcPicked) {
       let el = null;
       if (state._kcPicked.startsWith('troop:')) el = document.getElementById('tw-' + state._kcPicked.slice(6));
