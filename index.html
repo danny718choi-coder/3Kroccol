@@ -1169,13 +1169,21 @@ body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background-color:var
   position: fixed !important;
   left: 0; top: 0;
   pointer-events: none !important;
-  opacity: 0.6;
   z-index: 99999;
-  transform-origin: center center;
-  transform: translate(-50%, -50%) rotate(var(--rotation, 0deg)) scale(var(--piece-scale, 1));
-  filter: drop-shadow(0 0 10px rgba(255,215,0,0.7));
+  transform: translate(-50%, -50%);
   transition: none !important;
   margin: 0 !important;
+  padding: 0 !important;
+  background: none !important;
+  border: none !important;
+}
+.troop-ghost-inner {
+  pointer-events: none !important;
+  filter: drop-shadow(0 0 10px rgba(255,215,0,0.7));
+  opacity: 0.65;
+}
+.troop-ghost-inner .troop-piece {
+  transition: none !important;
 }
 .troop-piece { touch-action: none; }
 </style>
@@ -4618,52 +4626,91 @@ let dragState=null;
 let ghostState = null;
 let ghostMoveListener = null;
 
-function createGhost(troopId){
+function getGhostScale(){
+  return (typeof currentScale === 'number' && currentScale > 0) ? currentScale : 1;
+}
+
+function createGhost(troopIdOrIds){
   destroyGhost();
-  const wrapper = document.getElementById('tw-' + troopId);
-  if (!wrapper) return null;
-  const piece = wrapper.querySelector('.troop-piece');
-  if (!piece) return null;
-  const ghost = piece.cloneNode(true);
-  ghost.classList.add('troop-ghost');
-  ghost.classList.remove('highlighted', 'dragging');
-  ghost.removeAttribute('onclick');
-  ghost.removeAttribute('onmousedown');
-  ghost.removeAttribute('onpointerdown');
-  ['--p-outer', '--p-inner', '--p-border'].forEach(v => {
-    const val = wrapper.style.getPropertyValue(v);
-    if (val) ghost.style.setProperty(v, val);
+  const ids = Array.isArray(troopIdOrIds) ? troopIdOrIds : [troopIdOrIds];
+  const ghostEls = [];
+  const scale = getGhostScale();
+
+  ids.forEach(id => {
+    const wrapper = document.getElementById('tw-' + id);
+    if (!wrapper) return;
+    const piece = wrapper.querySelector('.troop-piece');
+    if (!piece) return;
+
+    const ghost = document.createElement('div');
+    ghost.className = 'troop-ghost';
+
+    const inner = document.createElement('div');
+    inner.className = 'troop-ghost-inner';
+    inner.style.zoom = scale;
+
+    const clone = piece.cloneNode(true);
+    clone.classList.remove('highlighted', 'dragging');
+    clone.removeAttribute('onclick');
+    clone.removeAttribute('onmousedown');
+    clone.removeAttribute('onpointerdown');
+
+    ['--p-outer', '--p-inner', '--p-border'].forEach(v => {
+      const val = wrapper.style.getPropertyValue(v);
+      if (val) clone.style.setProperty(v, val);
+    });
+
+    inner.appendChild(clone);
+    ghost.appendChild(inner);
+    document.body.appendChild(ghost);
+    ghostEls.push(ghost);
   });
-  document.body.appendChild(ghost);
-  ghostState = { el: ghost, troopId: troopId };
+
+  if (ghostEls.length === 0) return null;
+
+  ghostState = { els: ghostEls, troopIds: ids.slice(), scale: scale };
   ghostMoveListener = function(e){
     if (!ghostState) return;
-    ghostState.el.style.left = e.clientX + 'px';
-    ghostState.el.style.top  = e.clientY + 'px';
+    positionGhosts(e.clientX, e.clientY);
   };
   document.addEventListener('pointermove', ghostMoveListener);
-  return ghost;
+  return ghostEls;
 }
-function moveGhostTo(clientX, clientY){
+
+function positionGhosts(clientX, clientY){
   if (!ghostState) return;
-  ghostState.el.style.left = clientX + 'px';
-  ghostState.el.style.top  = clientY + 'px';
+  const scale = ghostState.scale || 1;
+  const TS_    = (typeof TS    !== 'undefined') ? TS    : 110;
+  const GAP_X_ = (typeof GAP_X !== 'undefined') ? GAP_X : 28;
+  const step = (TS_ + GAP_X_) * scale;   // matches handleProvinceClick stagger
+  ghostState.els.forEach((el, i) => {
+    el.style.left = (clientX + i * step) + 'px';
+    el.style.top  = clientY + 'px';
+  });
 }
+
+function moveGhostTo(clientX, clientY){
+  positionGhosts(clientX, clientY);
+}
+
 function destroyGhost(){
   if (ghostMoveListener){
     document.removeEventListener('pointermove', ghostMoveListener);
     ghostMoveListener = null;
   }
-  if (ghostState && ghostState.el && ghostState.el.parentNode){
-    ghostState.el.parentNode.removeChild(ghostState.el);
+  if (ghostState && ghostState.els){
+    ghostState.els.forEach(el => {
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    });
   }
   ghostState = null;
 }
+
 function computeDropOffset(provinceEl, clientX, clientY){
   const r = provinceEl.getBoundingClientRect();
   const cx = r.left + r.width  / 2;
   const cy = r.top  + r.height / 2;
-  const s  = (typeof currentScale === 'number' && currentScale > 0) ? currentScale : 1;
+  const s  = getGhostScale();
   return { x: (clientX - cx) / s, y: (clientY - cy) / s };
 }
 
