@@ -1162,6 +1162,22 @@ body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background-color:var
   bottom:2px;left:50%;transform:translateX(-50%);
   flex-direction:row;gap:4px;             /* ★ was 3px */
 }
+/* ══════════════════════════════════════════════════════════════════
+   Ghost preview for manual troop placement
+   ══════════════════════════════════════════════════════════════════ */
+.troop-ghost {
+  position: fixed !important;
+  left: 0; top: 0;
+  pointer-events: none !important;
+  opacity: 0.6;
+  z-index: 99999;
+  transform-origin: center center;
+  transform: translate(-50%, -50%) rotate(var(--rotation, 0deg)) scale(var(--piece-scale, 1));
+  filter: drop-shadow(0 0 10px rgba(255,215,0,0.7));
+  transition: none !important;
+  margin: 0 !important;
+}
+.troop-piece { touch-action: none; }
 </style>
 </head>
 <body>
@@ -4551,7 +4567,22 @@ function handleTroopClick(id,e){
   e.stopPropagation();
   const wrapper=document.getElementById('tw-'+id);
   if(!wrapper)return;
-  // 抗曹: click a glowing troop → commit immediately (no hesitation)
+
+  /* ★ If a troop is already selected and this click lands on a DIFFERENT province,
+        treat it as "drop here" — route to province click logic (attack / deploy). */
+  if (selectedTroops.length >= 1
+      && selectedTroops[0].parentElement !== wrapper.parentElement
+      && !selectedTroops.includes(wrapper)){
+    const provEl = wrapper.parentElement;
+    if (provEl && provEl.classList && provEl.classList.contains('map-region')){
+      handleProvinceClick(provEl.id, e);
+      return;
+    }
+  }
+
+  /* Clean up any ghost spawned by pointerdown */
+  destroyGhost();
+
   if(kangCaoSelectionActive && wrapper.classList.contains('kangcao-target')){
     endKangCaoCheck();
     scheduleAutoSave();
@@ -4562,6 +4593,7 @@ function handleTroopClick(id,e){
   if(idx>=0){
     piece.classList.remove('highlighted');
     selectedTroops.splice(idx,1);
+    if(selectedTroops.length>0) createGhost(selectedTroops[0].dataset.troop);
     refreshReachOverlayFromSelection();
     return;
   }
@@ -4569,6 +4601,10 @@ function handleTroopClick(id,e){
   if(selectedTroops.length===1&&selectedTroops[0].parentElement!==wrapper.parentElement)return;
   piece.classList.add('highlighted');
   selectedTroops.push(wrapper);
+  if(selectedTroops.length===1){
+    createGhost(id);
+    if(e && typeof e.clientX === 'number') moveGhostTo(e.clientX, e.clientY);
+  }
   refreshReachOverlayFromSelection();
 }
 
@@ -4578,78 +4614,74 @@ function cancelKangCaoPick(){
   kangCaoPickedPiece = null;
 }
 
-let dragState=null;
-function handleTroopMouseDown(id,e){
-  if(e.button!==0)return;
-  if(e.target.tagName==='BUTTON')return;
-  const st=troopState[id];
-  if(st && st.location==='eliminated') return;
+function handleTroopPointerDown(id, e){
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  if (e.target.tagName === 'BUTTON') return;
+  const st = troopState[id];
+  if (st && st.location === 'eliminated') return;
   e.preventDefault();
-  const wrapper=document.getElementById('tw-'+id);
-  if(!wrapper)return;
+  const wrapper = document.getElementById('tw-' + id);
+  if (!wrapper) return;
+  if (dragState) return;
   const parentProv = wrapper.closest('.map-region');
-  if(parentProv) parentProv.classList.add('has-dragging');
-  dragState={wrapper,startX:e.clientX,startY:e.clientY,dragging:false};
-  // ★ Show dim overlay for this troop's reachable destinations
+  if (parentProv) parentProv.classList.add('has-dragging');
+  dragState = { wrapper, startX: e.clientX, startY: e.clientY, dragging: false, troopId: id };
+  createGhost(id);
+  moveGhostTo(e.clientX, e.clientY);
   {
     const faction = troopConfig[id].faction;
     const src = (wrapper.parentElement && wrapper.parentElement.classList.contains('map-region'))
         ? wrapper.parentElement.id : null;
     if (src){
-      // Troop on the map: 1-2 step reach
       const reachable = computeReachableProvinces(src, faction);
       renderReachOverlay(src, reachable);
     } else if (wrapper.classList.contains('in-external')){
-      // 遊戲外部隊 not recruitable → dim everything
       renderReachOverlay(null, new Set());
     } else {
-      // Available pool troop: only own faction's provinces are valid
       const reachable = computePoolReachableProvinces(faction);
       renderReachOverlay(null, reachable);
     }
   }
-  document.addEventListener('mousemove',handleDragMove);
-  document.addEventListener('mouseup',handleDragEnd);
+  document.addEventListener('pointermove', handlePointerMove);
+  document.addEventListener('pointerup', handlePointerUp);
+  document.addEventListener('pointercancel', handlePointerUp);
 }
-function handleDragMove(e){
-  if(!dragState)return;
-  const dx=e.clientX-dragState.startX;
-  const dy=e.clientY-dragState.startY;
-  if(!dragState.dragging&&Math.hypot(dx,dy)>5){
-    dragState.dragging=true;
-    dragState.wrapper.classList.add('dragging');
-    document.body.style.cursor='grabbing';
+
+function handlePointerMove(e){
+  if (!dragState) return;
+  const dx = e.clientX - dragState.startX;
+  const dy = e.clientY - dragState.startY;
+  if (!dragState.dragging && Math.hypot(dx, dy) > 5){
+    dragState.dragging = true;
   }
-  if(dragState.dragging){
-    dragState.wrapper.style.setProperty('--drag-x',(dx/currentScale)+'px');
-    dragState.wrapper.style.setProperty('--drag-y',(dy/currentScale)+'px');
-  }
+  /* Ghost position is handled by ghostMoveListener in createGhost(). */
 }
-function handleDragEnd(e){
-  document.removeEventListener('mousemove',handleDragMove);
-  document.removeEventListener('mouseup',handleDragEnd);
-  document.body.style.cursor='';
-  if(!dragState)return;
-  const {wrapper,dragging}=dragState;
-  wrapper.style.setProperty('--drag-x','0px');
-  wrapper.style.setProperty('--drag-y','0px');
-  wrapper.classList.remove('dragging');
+
+function handlePointerUp(e){
+  const cancelled = (e.type === 'pointercancel');
+  document.removeEventListener('pointermove', handlePointerMove);
+  document.removeEventListener('pointerup', handlePointerUp);
+  document.removeEventListener('pointercancel', handlePointerUp);
+  document.body.style.cursor = '';
+  if (!dragState) return;
+  const { wrapper, dragging } = dragState;
   const parentProv = wrapper.closest('.map-region');
-  if(parentProv) parentProv.classList.remove('has-dragging');
-  if(dragging){
-    dragJustEnded=true;
-    setTimeout(()=>{dragJustEnded=false},50);
-    const elem=document.elementFromPoint(e.clientX,e.clientY);
-    let target=null;
-    let t=elem;
-    while(t){
-      if(t.classList&&t.classList.contains('map-region')){target={type:'province',el:t};break;}
-      if(t.id==='external-zone'){target={type:'external'};break;}
-      if(t.id==='available-zone'){target={type:'pool'};break;}
-      t=t.parentElement;
+  if (parentProv) parentProv.classList.remove('has-dragging');
+  if (cancelled){
+    destroyGhost(); clearReachOverlay(); dragState = null; return;
+  }
+  if (dragging){
+    dragJustEnded = true;
+    setTimeout(() => { dragJustEnded = false; }, 50);
+    const elem = document.elementFromPoint(e.clientX, e.clientY);
+    let target = null, t = elem;
+    while (t){
+      if (t.classList && t.classList.contains('map-region')){ target = { type: 'province', el: t }; break; }
+      if (t.id === 'external-zone'){ target = { type: 'external' }; break; }
+      if (t.id === 'available-zone'){ target = { type: 'pool' }; break; }
+      t = t.parentElement;
     }
-    if(target && target.type === 'province'){
-      // ★ FIX: hit-test the actual polygon (fixes 譙 ↔ 汝南 boundary drags)
+    if (target && target.type === 'province'){
       const realId = resolveProvinceFromClick(target.el.id, e.clientX, e.clientY);
       if (realId === null) target = null;
       else {
@@ -4657,14 +4689,15 @@ function handleDragEnd(e){
         if (realEl) target.el = realEl;
       }
     }
-    if(target){
-      if(target.type==='province')dropTroopOnProvince(wrapper,target.el,false);
-      else if(target.type==='external')dropTroopOnExternal(wrapper);
-      else if(target.type==='pool')dropTroopOnPool(wrapper);
+    if (target){
+      if (target.type === 'province') dropTroopOnProvince(wrapper, target.el, false, e.clientX, e.clientY);
+      else if (target.type === 'external') dropTroopOnExternal(wrapper);
+      else if (target.type === 'pool') dropTroopOnPool(wrapper);
     }
+    destroyGhost(); clearReachOverlay(); dragState = null; return;
   }
-  clearReachOverlay();   // ★
-  dragState=null;
+  /* Not dragging — keep ghost alive, the click event handles selection */
+  dragState = null;
 }
 
 function dropTroopOnExternal(wrapper){
@@ -4714,18 +4747,19 @@ function dropTroopOnPool(wrapper){
   checkBattleResolution();     // ★
 }
 
-function dropTroopOnProvince(wrapper,targetProvince,animate){
-  const id=wrapper.dataset.troop;
-  if(troopState[id].location==='eliminated')return;
-  if(wrapper.classList.contains('in-external'))return;   // 遊戲外部隊 not recruitable
-  const isInPool=wrapper.classList.contains('in-pool');
-  const targetId=targetProvince.id;
-  const sourceProvince=(!isInPool && wrapper.parentElement) ? wrapper.parentElement.id : null;
-  if(!isInPool&&sourceProvince===targetId)return;
+function dropTroopOnProvince(wrapper, targetProvince, animate, dropClientX, dropClientY){
+  const id = wrapper.dataset.troop;
+  if (troopState[id].location === 'eliminated') return;
+  if (wrapper.classList.contains('in-external')) return;
+  const isInPool = wrapper.classList.contains('in-pool');
+  const targetId = targetProvince.id;
+  const sourceProvince = (!isInPool && wrapper.parentElement) ? wrapper.parentElement.id : null;
+  if (!isInPool && sourceProvince === targetId) return;
+  const hasCoords = (typeof dropClientX === 'number' && typeof dropClientY === 'number');
 
-  // ★ Capture defender BEFORE the invader lands
+  /* ★ Capture defender BEFORE the invader lands */
   let defenderFactionHere = null;
-  if(!isInPool && sourceProvince && sourceProvince.startsWith('region-')){
+  if (!isInPool && sourceProvince && sourceProvince.startsWith('region-')){
     const existing = Array.from(targetProvince.children).find(c =>
       c.classList && c.classList.contains('troop-wrapper') &&
       !c.classList.contains('in-pool') && c.style.display !== 'none');
@@ -4739,7 +4773,6 @@ function dropTroopOnProvince(wrapper,targetProvince,animate){
         const mAnti = !!document.querySelector('#content-fancao .chess-piece.piece-'+mf);
         const eNeutral = !eCao && !eAnti;
         const mNeutral = !mCao && !mAnti;
-        // Not allies → battle
         if (!(eCao && mCao) && !(eAnti && mAnti) && !(eNeutral && mNeutral)){
           defenderFactionHere = ef;
         }
@@ -4748,32 +4781,43 @@ function dropTroopOnProvince(wrapper,targetProvince,animate){
   }
 
   pushUndoSnapshot('出征');
-  const fr=animate?wrapper.getBoundingClientRect():null;
-  wrapper.classList.remove('in-pool','in-external');
-  wrapper.style.setProperty('--offset-x','0px');
-  wrapper.style.setProperty('--offset-y','0px');
-  targetProvince.appendChild(wrapper);
-  if(isInPool){troopState[id].hp=1;updateTroopRotation(id);}
-  troopState[id].location=targetId;
-  if(sourceProvince)layoutRegion(sourceProvince);
-  layoutRegion(targetId);
-  // ★ Moved recalcVP to end of function (so pendingBattle is registered first)
-  if(animate&&fr){
-    const lr=wrapper.getBoundingClientRect();
-    const dx=(fr.left-lr.left)/currentScale;
-    const dy=(fr.top-lr.top)/currentScale;
-    wrapper.style.transition='none';
-    wrapper.style.transform='translate(calc(-50% + var(--offset-x, 0px) + '+dx+'px), calc(-50% + var(--offset-y, 0px) + '+dy+'px))';
-    void wrapper.offsetWidth;
-    wrapper.style.transition='transform 0.4s ease';
-    wrapper.style.transform='';
-    setTimeout(()=>{wrapper.style.transition='';wrapper.style.transform='';},450);
-  }
-  checkEmperorFlipOnTroopMove(troopConfig[id].faction);
-  if(troopConfig[id].faction==='caocao'){autoDeclareWar(targetProvince);}
+  const fr = animate ? wrapper.getBoundingClientRect() : null;
+  wrapper.classList.remove('in-pool', 'in-external');
 
-  // ★ Register or extend the battle
-  if(!isInPool && sourceProvince && sourceProvince.startsWith('region-')
+  /* ★ Manual placement: use the drop coordinates.
+        Auto placement (no coords): keep the old grid behaviour. */
+  if (hasCoords){
+    const off = computeDropOffset(targetProvince, dropClientX, dropClientY);
+    wrapper.style.setProperty('--offset-x', off.x + 'px');
+    wrapper.style.setProperty('--offset-y', off.y + 'px');
+  } else {
+    wrapper.style.setProperty('--offset-x', '0px');
+    wrapper.style.setProperty('--offset-y', '0px');
+  }
+
+  targetProvince.appendChild(wrapper);
+  if (isInPool){ troopState[id].hp = 1; updateTroopRotation(id); }
+  troopState[id].location = targetId;
+
+  if (sourceProvince) layoutRegion(sourceProvince);
+  if (!hasCoords)     layoutRegion(targetId);   /* ★ skip grid re-layout for manual drops */
+
+  if (animate && fr){
+    const lr = wrapper.getBoundingClientRect();
+    const dx = (fr.left - lr.left) / currentScale;
+    const dy = (fr.top - lr.top) / currentScale;
+    wrapper.style.transition = 'none';
+    wrapper.style.transform = 'translate(calc(-50% + var(--offset-x, 0px) + ' + dx + 'px), calc(-50% + var(--offset-y, 0px) + ' + dy + 'px))';
+    void wrapper.offsetWidth;
+    wrapper.style.transition = 'transform 0.4s ease';
+    wrapper.style.transform = '';
+    setTimeout(() => { wrapper.style.transition = ''; wrapper.style.transform = ''; }, 450);
+  }
+
+  checkEmperorFlipOnTroopMove(troopConfig[id].faction);
+  if (troopConfig[id].faction === 'caocao'){ autoDeclareWar(targetProvince); }
+
+  if (!isInPool && sourceProvince && sourceProvince.startsWith('region-')
       && (defenderFactionHere
           || (pendingBattle
               && pendingBattle.targetProvince === targetId
@@ -4782,14 +4826,10 @@ function dropTroopOnProvince(wrapper,targetProvince,animate){
     registerPendingBattle(targetId, sourceProvince, troopConfig[id].faction, [id], defenderFactionHere);
   }
 
-  // Re-check: if this move pulled an invader out of the battle province,
-  // or finished the fight, clear pendingBattle and hide the button.
   checkBattleResolution();
   recalcVP();
 
-  /* ★ 抗曹 徵召 commit → end the check, do NOT advance the round.
-        Otherwise this is a normal 行動 徵召 → auto-advance. */
-  if(kangCaoSelectionActive){
+  if (kangCaoSelectionActive){
     endKangCaoCheck();
   } else {
     scheduleAutoAdvance();
@@ -5018,7 +5058,6 @@ window.addEventListener('resize', () => {
 }, { passive: true });
 
 function handleProvinceClick(provinceId,e){
-  // ★ FIX: reroute clicks that landed on the wrong rectangular div
   if (e && typeof e.clientX === 'number'){
       const realId = resolveProvinceFromClick(provinceId, e.clientX, e.clientY);
       if (realId === null) return;
@@ -5030,10 +5069,16 @@ function handleProvinceClick(provinceId,e){
   const allHere=selectedTroops.every(w=>!w.classList.contains('in-pool')&&w.parentElement===province);
   const troopsCopy=[...selectedTroops];
   selectedTroops=[];
-  troopsCopy.forEach(w=>{
+  destroyGhost();
+  const dropX = (e && typeof e.clientX === 'number') ? e.clientX : null;
+  const dropY = (e && typeof e.clientY === 'number') ? e.clientY : null;
+  const scale = (typeof currentScale === 'number' && currentScale > 0) ? currentScale : 1;
+  troopsCopy.forEach((w, i) => {
     w.querySelector('.troop-piece').classList.remove('highlighted');
     if(allHere)return;
-    dropTroopOnProvince(w,province,true);
+    const staggerX = dropX !== null ? dropX + i * (TS + GAP_X) * scale : undefined;
+    const staggerY = dropY !== null ? dropY : undefined;
+    dropTroopOnProvince(w, province, true, staggerX, staggerY);
   });
   clearReachOverlay();
 }
