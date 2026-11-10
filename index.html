@@ -4613,6 +4613,59 @@ function cancelKangCaoPick(){
   if(kangCaoPickedPiece) kangCaoPickedPiece.classList.remove('kangcao-picked');
   kangCaoPickedPiece = null;
 }
+let dragState=null;
+/* ★ Ghost preview state for manual troop placement */
+let ghostState = null;
+let ghostMoveListener = null;
+
+function createGhost(troopId){
+  destroyGhost();
+  const wrapper = document.getElementById('tw-' + troopId);
+  if (!wrapper) return null;
+  const piece = wrapper.querySelector('.troop-piece');
+  if (!piece) return null;
+  const ghost = piece.cloneNode(true);
+  ghost.classList.add('troop-ghost');
+  ghost.classList.remove('highlighted', 'dragging');
+  ghost.removeAttribute('onclick');
+  ghost.removeAttribute('onmousedown');
+  ghost.removeAttribute('onpointerdown');
+  ['--p-outer', '--p-inner', '--p-border'].forEach(v => {
+    const val = wrapper.style.getPropertyValue(v);
+    if (val) ghost.style.setProperty(v, val);
+  });
+  document.body.appendChild(ghost);
+  ghostState = { el: ghost, troopId: troopId };
+  ghostMoveListener = function(e){
+    if (!ghostState) return;
+    ghostState.el.style.left = e.clientX + 'px';
+    ghostState.el.style.top  = e.clientY + 'px';
+  };
+  document.addEventListener('pointermove', ghostMoveListener);
+  return ghost;
+}
+function moveGhostTo(clientX, clientY){
+  if (!ghostState) return;
+  ghostState.el.style.left = clientX + 'px';
+  ghostState.el.style.top  = clientY + 'px';
+}
+function destroyGhost(){
+  if (ghostMoveListener){
+    document.removeEventListener('pointermove', ghostMoveListener);
+    ghostMoveListener = null;
+  }
+  if (ghostState && ghostState.el && ghostState.el.parentNode){
+    ghostState.el.parentNode.removeChild(ghostState.el);
+  }
+  ghostState = null;
+}
+function computeDropOffset(provinceEl, clientX, clientY){
+  const r = provinceEl.getBoundingClientRect();
+  const cx = r.left + r.width  / 2;
+  const cy = r.top  + r.height / 2;
+  const s  = (typeof currentScale === 'number' && currentScale > 0) ? currentScale : 1;
+  return { x: (clientX - cx) / s, y: (clientY - cy) / s };
+}
 
 function handleTroopPointerDown(id, e){
   if (e.pointerType === 'mouse' && e.button !== 0) return;
