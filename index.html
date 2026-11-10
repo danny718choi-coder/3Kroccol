@@ -4633,14 +4633,25 @@ function getGhostScale(){
 function createGhost(troopIdOrIds){
   destroyGhost();
   const ids = Array.isArray(troopIdOrIds) ? troopIdOrIds : [troopIdOrIds];
-  const ghostEls = [];
   const scale = getGhostScale();
+
+  const ghostEls = [];
+  const keptIds = [];
+  const relOffsets = [];
+  let baseOx = null, baseOy = null;
 
   ids.forEach(id => {
     const wrapper = document.getElementById('tw-' + id);
     if (!wrapper) return;
     const piece = wrapper.querySelector('.troop-piece');
     if (!piece) return;
+
+    /* ★ Read this troop's board-local offset so we can preserve
+          vertical / horizontal / diagonal arrangement. */
+    const ox = parseFloat(wrapper.style.getPropertyValue('--offset-x')) || 0;
+    const oy = parseFloat(wrapper.style.getPropertyValue('--offset-y')) || 0;
+    if (baseOx === null){ baseOx = ox; baseOy = oy; }
+    relOffsets.push({ x: (ox - baseOx) * scale, y: (oy - baseOy) * scale });
 
     const ghost = document.createElement('div');
     ghost.className = 'troop-ghost';
@@ -4663,12 +4674,19 @@ function createGhost(troopIdOrIds){
     inner.appendChild(clone);
     ghost.appendChild(inner);
     document.body.appendChild(ghost);
+
     ghostEls.push(ghost);
+    keptIds.push(id);
   });
 
   if (ghostEls.length === 0) return null;
 
-  ghostState = { els: ghostEls, troopIds: ids.slice(), scale: scale };
+  ghostState = {
+    els: ghostEls,
+    relOffsets: relOffsets,
+    troopIds: keptIds,
+    scale: scale
+  };
   ghostMoveListener = function(e){
     if (!ghostState) return;
     positionGhosts(e.clientX, e.clientY);
@@ -4679,13 +4697,10 @@ function createGhost(troopIdOrIds){
 
 function positionGhosts(clientX, clientY){
   if (!ghostState) return;
-  const scale = ghostState.scale || 1;
-  const TS_    = (typeof TS    !== 'undefined') ? TS    : 110;
-  const GAP_X_ = (typeof GAP_X !== 'undefined') ? GAP_X : 28;
-  const step = (TS_ + GAP_X_) * scale;   // matches handleProvinceClick stagger
   ghostState.els.forEach((el, i) => {
-    el.style.left = (clientX + i * step) + 'px';
-    el.style.top  = clientY + 'px';
+    const rel = ghostState.relOffsets[i] || { x: 0, y: 0 };
+    el.style.left = (clientX + rel.x) + 'px';
+    el.style.top  = (clientY + rel.y) + 'px';
   });
 }
 
@@ -4726,7 +4741,22 @@ function handleTroopPointerDown(id, e){
   const parentProv = wrapper.closest('.map-region');
   if (parentProv) parentProv.classList.add('has-dragging');
   dragState = { wrapper, startX: e.clientX, startY: e.clientY, dragging: false, troopId: id };
-  createGhost(id);
+
+  /* ★ Preview the INTENDED final selection during the drag:
+       • nothing selected   → preview [this]
+       • 1 selected in same → preview [existing, this]
+       • 2 selected         → preview that pair
+       • 1 selected elsewhere → preview [this] */
+  let previewIds = selectedTroops.map(w => w.dataset.troop);
+  if (!previewIds.includes(id)){
+    const sameProv = selectedTroops.length === 0
+                  || (selectedTroops[0].parentElement === wrapper.parentElement);
+    if (previewIds.length < 2 && sameProv) previewIds.push(id);
+    else previewIds = [id];
+  }
+  if (previewIds.length === 0) previewIds = [id];
+
+  createGhost(previewIds);
   moveGhostTo(e.clientX, e.clientY);
   {
     const faction = troopConfig[id].faction;
@@ -5166,18 +5196,33 @@ function handleProvinceClick(provinceId,e){
   if(selectedTroops.length===0)return;
   const province=document.getElementById(provinceId);
   if(!province) return;
+
   const allHere=selectedTroops.every(w=>!w.classList.contains('in-pool')&&w.parentElement===province);
   const troopsCopy=[...selectedTroops];
   selectedTroops=[];
   destroyGhost();
+
   const dropX = (e && typeof e.clientX === 'number') ? e.clientX : null;
   const dropY = (e && typeof e.clientY === 'number') ? e.clientY : null;
-  const scale = (typeof currentScale === 'number' && currentScale > 0) ? currentScale : 1;
+
+  /* ★ Preserve the source arrangement on drop:
+        read each troop's board-local offset relative to the FIRST one. */
+  const scale = getGhostScale();
+  const rawOffsets = troopsCopy.map(w => ({
+    ox: parseFloat(w.style.getPropertyValue('--offset-x')) || 0,
+    oy: parseFloat(w.style.getPropertyValue('--offset-y')) || 0
+  }));
+  const baseX = rawOffsets[0] ? rawOffsets[0].ox : 0;
+  const baseY = rawOffsets[0] ? rawOffsets[0].oy : 0;
+
   troopsCopy.forEach((w, i) => {
     w.querySelector('.troop-piece').classList.remove('highlighted');
-    if(allHere)return;
-    const staggerX = dropX !== null ? dropX + i * (TS + GAP_X) * scale : undefined;
-    const staggerY = dropY !== null ? dropY : undefined;
+    if (allHere) return;
+    let staggerX, staggerY;
+    if (dropX !== null && dropY !== null && rawOffsets[i]){
+      staggerX = dropX + (rawOffsets[i].ox - baseX) * scale;
+      staggerY = dropY + (rawOffsets[i].oy - baseY) * scale;
+    }
     dropTroopOnProvince(w, province, true, staggerX, staggerY);
   });
   clearReachOverlay();
