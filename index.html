@@ -4596,12 +4596,14 @@ function handleTroopClick(id,e){
     scheduleAutoSave();
     return;
   }
-  const piece=wrapper.querySelector('.troop-piece');
+	const piece=wrapper.querySelector('.troop-piece');
   const idx=selectedTroops.indexOf(wrapper);
   if(idx>=0){
     piece.classList.remove('highlighted');
     selectedTroops.splice(idx,1);
-    if(selectedTroops.length>0) createGhost(selectedTroops[0].dataset.troop);
+    if(selectedTroops.length>0){
+      createGhost(selectedTroops.map(w => w.dataset.troop));
+    }
     refreshReachOverlayFromSelection();
     return;
   }
@@ -4609,10 +4611,8 @@ function handleTroopClick(id,e){
   if(selectedTroops.length===1&&selectedTroops[0].parentElement!==wrapper.parentElement)return;
   piece.classList.add('highlighted');
   selectedTroops.push(wrapper);
-  if(selectedTroops.length===1){
-    createGhost(id);
-    if(e && typeof e.clientX === 'number') moveGhostTo(e.clientX, e.clientY);
-  }
+  createGhost(selectedTroops.map(w => w.dataset.troop));
+  if(e && typeof e.clientX === 'number') moveGhostTo(e.clientX, e.clientY);
   refreshReachOverlayFromSelection();
 }
 
