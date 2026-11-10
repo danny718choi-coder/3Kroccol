@@ -4277,7 +4277,7 @@ function buildTroopHTML(id){
   const wStyle='--p-outer:'+fc.o+';--p-inner:'+fc.i+';--p-border:'+fc.b;
   const costHTML=(cfg.cost!==undefined)?'<div class="troop-cost">'+cfg.cost+'</div>':'';
   return '<div class="troop-wrapper" id="tw-'+id+'" data-troop="'+id+'" style="'+wStyle+'">'
-    +'<div class="'+classes.join(' ')+'" onclick="handleTroopClick(\''+id+'\', event)" onmousedown="handleTroopMouseDown(\''+id+'\', event)">'
++'<div class="'+classes.join(' ')+'" onclick="handleTroopClick(\''+id+'\', event)" onpointerdown="handleTroopPointerDown(\''+id+'\', event)">'
     +buildHpIndicators(cfg.maxHp)
     +'<div class="troop-inner">'
     +'<div class="troop-name-v">'+cfg.name.map(c=>'<span>'+c+'</span>').join('')+'</div>'
@@ -4682,11 +4682,23 @@ function createGhost(troopIdOrIds){
   if (ghostEls.length === 0) return null;
 
   ghostState = {
-    els: ghostEls,
-    relOffsets: relOffsets,
-    troopIds: keptIds,
-    scale: scale
-  };
+      els: ghostEls,
+      relOffsets: (function(){
+        const arr = [];
+        let bx = null, by = null;
+        ids.forEach(id => {
+          const w = document.getElementById('tw-' + id);
+          if (!w) return;
+          const ox = parseFloat(w.style.getPropertyValue('--offset-x')) || 0;
+          const oy = parseFloat(w.style.getPropertyValue('--offset-y')) || 0;
+          if (bx === null){ bx = ox; by = oy; }
+          arr.push({ x: (ox - bx) * scale, y: (oy - by) * scale });
+        });
+        return arr;
+      })(),
+      troopIds: ids.slice(),
+      scale: scale
+    };
   ghostMoveListener = function(e){
     if (!ghostState) return;
     positionGhosts(e.clientX, e.clientY);
@@ -4698,7 +4710,7 @@ function createGhost(troopIdOrIds){
 function positionGhosts(clientX, clientY){
   if (!ghostState) return;
   ghostState.els.forEach((el, i) => {
-    const rel = ghostState.relOffsets[i] || { x: 0, y: 0 };
+    const rel = (ghostState.relOffsets && ghostState.relOffsets[i]) || { x: 0, y: 0 };
     el.style.left = (clientX + rel.x) + 'px';
     el.style.top  = (clientY + rel.y) + 'px';
   });
@@ -5205,8 +5217,6 @@ function handleProvinceClick(provinceId,e){
   const dropX = (e && typeof e.clientX === 'number') ? e.clientX : null;
   const dropY = (e && typeof e.clientY === 'number') ? e.clientY : null;
 
-  /* ★ Preserve the source arrangement on drop:
-        read each troop's board-local offset relative to the FIRST one. */
   const scale = getGhostScale();
   const rawOffsets = troopsCopy.map(w => ({
     ox: parseFloat(w.style.getPropertyValue('--offset-x')) || 0,
